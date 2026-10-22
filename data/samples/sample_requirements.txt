@@ -1,0 +1,31 @@
+BSc in Computer Science (sample requirement document, fictional)
+
+Core courses
+COMP1117 Computer Programming (6 credits)
+  Prerequisite: None
+  Assessment: 3 assignments, 1 midterm, 1 final exam
+
+COMP2113 Programming Technologies (6 credits)
+  Prerequisite: COMP1117
+  Assessment: 4 assignments, 1 final exam
+
+COMP2119 Introduction to Data Structures and Algorithms (6 credits)
+  Prerequisite: COMP1117 and (MATH1013 or MATH1853)
+  Assessment: 3 assignments, 1 midterm, 1 final exam
+
+COMP3230 Principles of Operating Systems (6 credits)
+  Prerequisite: COMP2113 and COMP2119
+  Assessment: 4 assignments, 1 midterm, 1 final exam
+
+COMP3314 Machine Learning (6 credits)
+  Prerequisite: COMP2119 or STAT2601
+  Assessment: assignments, project, final exam
+
+Mathematics
+MATH1013 University Mathematics II (6 credits)
+  Prerequisite: None
+  Assessment: 2 quizzes, 1 midterm, 1 final exam
+
+STAT2601 Probability and Statistics I (6 credits)
+  Prerequisite: MATH1013
+  Assessment: 2 assignments, 1 midterm, 1 final exam
