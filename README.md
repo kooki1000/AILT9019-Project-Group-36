@@ -25,7 +25,7 @@ See the project proposal for the full design and evaluation criteria.
 | 3. Detect and translate Chinese reviews     | built as a team tool for dataset preparation (not yet wired into the app) |
 | 4. 1–10 difficulty score with fallback rule | built       |
 | 5. Multi-semester plan generator            | built       |
-| 6. Review and adjust the plan               | todo        |
+| 6. Review and adjust the plan               | built       |
 | 7. Flag prerequisite conflicts              | built       |
 
 ## Setup
@@ -37,6 +37,19 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 ```
+
+## Run the app
+
+```bash
+streamlit run src/course_planner/app.py
+```
+
+The app opens in your browser. Pick **Use the sample document** and press
+**Build my plan** to see a draft plan straight away, then move courses between
+semesters or add electives; every change is re-checked immediately. Uploaded
+documents and their parsed results are kept in a local SQLite file
+(`.course_planner/app.sqlite3`) and can be deleted from the sidebar. Set
+`COURSE_PLANNER_DB` to store it somewhere else.
 
 ## Preparing the review dataset (team only)
 
@@ -66,6 +79,7 @@ Chinese reviews are translated once, by the team, when the dataset is built:
 
 Reviews that are still untranslated when the app loads them are left out of the
 difficulty score, and the app says so.
+
 
 ## Development
 
