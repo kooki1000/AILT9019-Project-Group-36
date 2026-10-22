@@ -22,7 +22,7 @@ See the project proposal for the full design and evaluation criteria.
 | ------------------------------------------- | ----------- |
 | 1. Parse requirement document               | built (95% bar not yet measured) |
 | 2. Retrieve reviews from local RIC dataset  | todo        |
-| 3. Detect and translate Chinese reviews     | todo        |
+| 3. Detect and translate Chinese reviews     | built (not yet wired into the app) |
 | 4. 1–10 difficulty score with fallback rule | built       |
 | 5. Multi-semester plan generator            | built       |
 | 6. Review and adjust the plan               | todo        |
@@ -37,6 +37,22 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 ```
+
+## Offline translation (Chinese reviews)
+
+Chinese reviews are translated to English on your own computer with the
+open-source `Helsinki-NLP/opus-mt-zh-en` model; nothing is sent to any service.
+It needs a one-time setup that downloads the model (a few hundred MB):
+
+```bash
+pip install -e ".[translation]"
+python -m course_planner.translation download
+python -m course_planner.translation translate "這門課功課很多"
+```
+
+Machine translation can miss tone and idioms, so original reviews are always
+kept next to their translations. `export_review_sample` writes a CSV of
+translated reviews for a Chinese-reading teammate to spot-check.
 
 ## Development
 
