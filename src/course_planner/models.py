@@ -42,3 +42,30 @@ class ParseResult:
 
     def by_code(self) -> dict[str, Course]:
         return {course.code: course for course in self.courses}
+
+
+@dataclass(frozen=True)
+class Review:
+    """One course review from the local RIC dataset.
+
+    ``text`` is always the original wording, kept next to ``translation`` so any
+    score can be traced back to its source. ``translation`` is the English text
+    used downstream; for reviews already in English it equals ``text``.
+    """
+
+    course_code: str
+    text: str
+    # RIC-style numeric rating, if the dataset has one (scale is the dataset's own).
+    rating: float | None = None
+    translation: str | None = None
+    # "en", "zh", or ``None`` before language detection has run.
+    language: str | None = None
+    # "not_needed", "translated" or "failed"; ``None`` before translation has run.
+    translation_status: str | None = None
+
+    @property
+    def english_text(self) -> str | None:
+        """Text usable for English-language analysis, or ``None`` if translation failed."""
+        if self.translation_status == "failed":
+            return None
+        return self.translation if self.translation is not None else self.text

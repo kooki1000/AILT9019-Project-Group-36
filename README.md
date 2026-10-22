@@ -22,7 +22,7 @@ See the project proposal for the full design and evaluation criteria.
 | ------------------------------------------- | ----------- |
 | 1. Parse requirement document               | built (95% bar not yet measured) |
 | 2. Retrieve reviews from local RIC dataset  | todo        |
-| 3. Detect and translate Chinese reviews     | todo        |
+| 3. Detect and translate Chinese reviews     | built as a team tool for dataset preparation (not yet wired into the app) |
 | 4. 1–10 difficulty score with fallback rule | built       |
 | 5. Multi-semester plan generator            | built       |
 | 6. Review and adjust the plan               | built       |
@@ -50,6 +50,36 @@ semesters or add electives; every change is re-checked immediately. Uploaded
 documents and their parsed results are kept in a local SQLite file
 (`.course_planner/app.sqlite3`) and can be deleted from the sidebar. Set
 `COURSE_PLANNER_DB` to store it somewhere else.
+
+## Preparing the review dataset (team only)
+
+**You do not need this section to use the app.** The app never translates
+anything itself: it reads a review dataset that already contains English text,
+so it needs no model, no extra install and no API key.
+
+Chinese reviews are translated once, by the team, when the dataset is built:
+
+1. Run the offline translator over the collected reviews on one machine. It uses
+   the open-source `Helsinki-NLP/opus-mt-zh-en` model, so nothing is sent to any
+   service. This needs a one-time download of the model and PyTorch, which is
+   large (hundreds of MB to a few GB):
+
+   ```bash
+   pip install -e ".[translation]"
+   python -m course_planner.translation download
+   python -m course_planner.translation translate "這門課功課很多"   # quick test
+   ```
+
+2. Have a Chinese-reading teammate spot-check the output.
+   `export_review_sample` writes a CSV of random translated reviews with blank
+   `adequate` and `notes` columns to fill in. Machine translation can miss tone
+   and idioms, and the model is weaker on colloquial Cantonese.
+3. Ship the checked dataset with both the original and the English text, so any
+   score can be traced back to its source.
+
+Reviews that are still untranslated when the app loads them are left out of the
+difficulty score, and the app says so.
+
 
 ## Development
 
