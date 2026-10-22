@@ -22,7 +22,7 @@ See the project proposal for the full design and evaluation criteria.
 | ------------------------------------------- | ----------- |
 | 1. Parse requirement document               | built (95% bar not yet measured) |
 | 2. Retrieve reviews from local RIC dataset  | todo        |
-| 3. Detect and translate Chinese reviews     | built (not yet wired into the app) |
+| 3. Detect and translate Chinese reviews     | built as a team tool for dataset preparation (not yet wired into the app) |
 | 4. 1–10 difficulty score with fallback rule | built       |
 | 5. Multi-semester plan generator            | built       |
 | 6. Review and adjust the plan               | todo        |
@@ -38,21 +38,34 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-## Offline translation (Chinese reviews)
+## Preparing the review dataset (team only)
 
-Chinese reviews are translated to English on your own computer with the
-open-source `Helsinki-NLP/opus-mt-zh-en` model; nothing is sent to any service.
-It needs a one-time setup that downloads the model (a few hundred MB):
+**You do not need this section to use the app.** The app never translates
+anything itself: it reads a review dataset that already contains English text,
+so it needs no model, no extra install and no API key.
 
-```bash
-pip install -e ".[translation]"
-python -m course_planner.translation download
-python -m course_planner.translation translate "這門課功課很多"
-```
+Chinese reviews are translated once, by the team, when the dataset is built:
 
-Machine translation can miss tone and idioms, so original reviews are always
-kept next to their translations. `export_review_sample` writes a CSV of
-translated reviews for a Chinese-reading teammate to spot-check.
+1. Run the offline translator over the collected reviews on one machine. It uses
+   the open-source `Helsinki-NLP/opus-mt-zh-en` model, so nothing is sent to any
+   service. This needs a one-time download of the model and PyTorch, which is
+   large (hundreds of MB to a few GB):
+
+   ```bash
+   pip install -e ".[translation]"
+   python -m course_planner.translation download
+   python -m course_planner.translation translate "這門課功課很多"   # quick test
+   ```
+
+2. Have a Chinese-reading teammate spot-check the output.
+   `export_review_sample` writes a CSV of random translated reviews with blank
+   `adequate` and `notes` columns to fill in. Machine translation can miss tone
+   and idioms, and the model is weaker on colloquial Cantonese.
+3. Ship the checked dataset with both the original and the English text, so any
+   score can be traced back to its source.
+
+Reviews that are still untranslated when the app loads them are left out of the
+difficulty score, and the app says so.
 
 ## Development
 
