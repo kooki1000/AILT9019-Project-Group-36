@@ -1,0 +1,16 @@
+BBA Accounting and Finance (constructed test document, fictional)
+
+- ACCT1001 Financial Accounting (6 credits) Prerequisite: None. Assessment: 2 assignments, 1 midterm, 1 final exam
+- ECON1001 Microeconomics (6 credits) Prerequisite: None. Assessment: 3 quizzes, 1 final exam
+- ECON1002 Macroeconomics (6 credits) Prerequisite: None. Assessment: 3 quizzes, 1 final exam
+- MGMT1001 Introduction to Management (3 credits) Prerequisite: None. Assessment: 1 group project, 1 essay
+- STAT1101 Business Statistics (6 credits) Prerequisite: None. Assessment: 4 assignments, 1 midterm, 1 final exam
+- ACCT2001 Management Accounting (6 credits) Prerequisite: ACCT1001. Assessment: 3 assignments, 1 midterm, 1 final exam
+- ACCT2002 Intermediate Financial Accounting (6 credits) Prerequisite: ACCT1001. Assessment: 3 assignments, 1 midterm, 1 final exam
+- FINA2001 Corporate Finance (6 credits) Prerequisite: ACCT1001 and ECON1001. Assessment: 4 assignments, 1 final exam
+- FINA2002 Financial Markets (6 credits) Prerequisite: ECON1002. Assessment: 2 assignments, 1 midterm, 1 final exam
+- MGMT2001 Organisational Behaviour (3 credits) Prerequisite: MGMT1001. Assessment: 1 case study, 1 presentation
+- ACCT3001 Auditing (6 credits) Prerequisite: ACCT2002. Assessment: 2 assignments, 1 midterm, 1 final exam
+- FINA3001 Investments (6 credits) Prerequisite: FINA2001 and STAT1101. Assessment: 3 assignments, 1 midterm, 1 final exam
+- FINA3002 Derivatives (6 credits) Prerequisite: FINA3001. Assessment: 3 assignments, 1 final exam
+- MGMT3001 Strategy Capstone (6 credits) Prerequisite: MGMT2001 and ACCT2001. Assessment: 1 project, 1 presentation, 1 report

@@ -1,0 +1,26 @@
+BA History and Politics (constructed test document, fictional)
+
+LANG1001 | Academic English I | 3 credits | Prerequisite: None | Assessment: 2 essays, 1 presentation
+LANG1002 | Academic English II | 3 credits | Prerequisite: LANG1001 | Assessment: 2 essays, 1 presentation
+HIST1001 | World History to 1500 | 6 credits | Prerequisite: None | Assessment: 2 essays, 1 final exam
+HIST1002 | World History since 1500 | 6 credits | Prerequisite: None | Assessment: 2 essays, 1 final exam
+HIST2001 | Historical Methods | 6 credits | Prerequisite: HIST1001 | Assessment: 3 assignments, 1 research paper
+HIST2002 | Modern China | 6 credits | Prerequisite: HIST1002 | Assessment: 2 essays, 1 midterm, 1 final exam
+HIST2003 | Colonial Hong Kong | 6 credits | Prerequisite: HIST1002 or HIST1001 | Assessment: 2 essays, 1 final exam
+HIST2004 | Historiography | 6 credits | Prerequisite: HIST2001 | Assessment: 3 assignments, 1 final exam
+POLI1001 | Introduction to Politics | 6 credits | Prerequisite: None | Assessment: 3 quizzes, 1 final exam
+POLI2001 | Comparative Politics | 6 credits | Prerequisite: POLI1001 | Assessment: 2 essays, 1 midterm, 1 final exam
+POLI2002 | International Relations | 6 credits | Prerequisite: POLI1001 | Assessment: 2 essays, 1 final exam
+POLI3001 | Political Theory | 6 credits | Prerequisite: POLI2001 | Assessment: 3 essays, 1 final exam
+PHIL1001 | Critical Thinking | 3 credits | Prerequisite: None | Assessment: 4 assignments
+PHIL2001 | Ethics | 6 credits | Prerequisite: PHIL1001 | Assessment: 2 essays, 1 final exam
+PHIL3001 | Philosophy of History | 6 credits | Prerequisite: PHIL2001 and HIST2001 | Assessment: 2 essays, 1 presentation, 1 final exam
+SOCI1001 | Introduction to Sociology | 6 credits | Prerequisite: None | Assessment: 2 assignments, 1 final exam
+SOCI2001 | Research Methods | 6 credits | Prerequisite: SOCI1001 | Assessment: 4 assignments, 1 project
+SOCI3001 | Social Theory | 6 credits | Prerequisite: SOCI2001 | Assessment: 3 essays, 1 final exam
+HIST3001 | Special Topics in History | 6 credits | Prerequisite: HIST2002 and HIST2004 | Assessment: 1 research paper, 1 presentation
+HIST3002 | Public History | 3 credits | Prerequisite: HIST2003 | Assessment: 1 project, 1 report
+POLI3002 | Public Policy | 6 credits | Prerequisite: POLI2002 and SOCI2001 | Assessment: 2 essays, 1 project, 1 final exam
+HIST4001 | Dissertation I | 6 credits | Prerequisite: HIST3001 and HIST2004 | Assessment: 1 proposal, 1 literature review
+HIST4002 | Dissertation II | 6 credits | Prerequisite: HIST4001 | Assessment: 1 thesis, 1 presentation
+ARTS4001 | Capstone Seminar | 3 credits | Prerequisite: HIST4001 and POLI3001 | Assessment: 1 essay, 1 presentation

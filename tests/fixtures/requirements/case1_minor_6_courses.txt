@@ -1,0 +1,8 @@
+Minor in Data Literacy (constructed test document, fictional)
+
+STAT1001 | Statistical Thinking | 6 credits | Prerequisite: None | Assessment: 2 quizzes, 1 final exam
+STAT1002 | Data Visualisation | 3 credits | Prerequisite: None | Assessment: 3 assignments
+STAT2001 | Regression Methods | 6 credits | Prerequisite: STAT1001 | Assessment: 3 assignments, 1 midterm, 1 final exam
+STAT2002 | Survey Design | 3 credits | Prerequisite: STAT1001 | Assessment: 1 project, 1 report
+STAT3001 | Applied Modelling | 6 credits | Prerequisite: STAT2001 and STAT1002 | Assessment: 2 assignments, 1 project, 1 final exam
+STAT3002 | Data Ethics Seminar | 3 credits | Prerequisite: STAT2002 | Assessment: 1 essay, 1 presentation
