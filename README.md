@@ -20,13 +20,13 @@ See the project proposal for the full design and evaluation criteria.
 
 | Must-have                                   | Status      |
 | ------------------------------------------- | ----------- |
-| 1. Parse requirement document               | in progress |
+| 1. Parse requirement document               | built (95% bar not yet measured) |
 | 2. Retrieve reviews from local RIC dataset  | todo        |
 | 3. Detect and translate Chinese reviews     | todo        |
-| 4. 1–10 difficulty score with fallback rule | in progress |
-| 5. Multi-semester plan generator            | todo        |
+| 4. 1–10 difficulty score with fallback rule | built       |
+| 5. Multi-semester plan generator            | built       |
 | 6. Review and adjust the plan               | todo        |
-| 7. Flag prerequisite conflicts              | todo        |
+| 7. Flag prerequisite conflicts              | built       |
 
 ## Setup
 
@@ -43,4 +43,12 @@ pip install -e ".[dev]"
 ```bash
 pytest          # run the tests
 ruff check .    # lint
+```
+
+Check the plan generator against a folder of requirement documents (every plan
+must contain each course once, respect prerequisites and stay under the load
+limit, and be more even than document order in at least 4 of 5 cases):
+
+```bash
+python -m course_planner.evaluation tests/fixtures/requirements
 ```

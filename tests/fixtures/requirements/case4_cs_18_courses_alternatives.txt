@@ -1,0 +1,21 @@
+BEng Computer Science (constructed test document, fictional)
+Includes alternative prerequisites (A or B).
+
+COMP1001 | Programming Fundamentals | 6 credits | Prerequisite: None | Assessment: 4 assignments, 1 midterm, 1 final exam
+COMP1002 | Discrete Mathematics | 6 credits | Prerequisite: None | Assessment: 3 assignments, 1 final exam
+MATH1101 | Calculus for Engineers | 6 credits | Prerequisite: None | Assessment: 5 quizzes, 1 midterm, 1 final exam
+MATH1102 | Linear Algebra for Engineers | 6 credits | Prerequisite: None | Assessment: 4 assignments, 1 final exam
+COMP2001 | Data Structures | 6 credits | Prerequisite: COMP1001 | Assessment: 4 assignments, 1 midterm, 1 final exam
+COMP2002 | Computer Organisation | 6 credits | Prerequisite: COMP1001 | Assessment: 3 assignments, 1 midterm, 1 final exam
+COMP2003 | Algorithms | 6 credits | Prerequisite: COMP2001 and COMP1002 | Assessment: 4 assignments, 1 midterm, 1 final exam
+COMP2004 | Object-Oriented Design | 3 credits | Prerequisite: COMP1001 | Assessment: 2 projects
+COMP2005 | Databases | 6 credits | Prerequisite: COMP2001 or COMP2004 | Assessment: 3 assignments, 1 project, 1 final exam
+COMP3001 | Operating Systems | 6 credits | Prerequisite: COMP2002 and COMP2001 | Assessment: 4 assignments, 1 midterm, 1 final exam
+COMP3002 | Computer Networks | 6 credits | Prerequisite: COMP2002 or COMP3001 | Assessment: 3 assignments, 1 final exam
+COMP3003 | Machine Learning | 6 credits | Prerequisite: COMP2003 and (MATH1102 or STAT1101) | Assessment: 3 assignments, 1 project, 1 final exam
+STAT1101 | Probability | 6 credits | Prerequisite: MATH1101 | Assessment: 3 assignments, 1 midterm, 1 final exam
+COMP3004 | Software Engineering | 6 credits | Prerequisite: COMP2004 and COMP2005 | Assessment: 1 group project, 2 reports, 1 presentation
+COMP3005 | Compilers | 6 credits | Prerequisite: COMP2003 | Assessment: 3 assignments, 1 project, 1 final exam
+COMP3006 | Computer Graphics | 6 credits | Prerequisite: COMP2003 and MATH1102 | Assessment: 3 assignments, 1 final exam
+COMP4001 | Distributed Systems | 6 credits | Prerequisite: COMP3001 and COMP3002 | Assessment: 3 assignments, 1 project, 1 final exam
+COMP4002 | Final Year Project | 6 credits | Prerequisite: COMP3004 | Assessment: 1 proposal, 1 report, 1 presentation

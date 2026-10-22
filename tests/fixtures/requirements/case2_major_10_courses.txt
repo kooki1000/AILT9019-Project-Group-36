@@ -1,0 +1,37 @@
+BSc Physics core (constructed test document, fictional)
+
+Year 1
+PHYS1001 Mechanics (6 credits)
+  Prerequisite: None
+  Assessment: 4 assignments, 1 midterm, 1 final exam
+PHYS1002 Waves and Optics (6 credits)
+  Prerequisite: None
+  Assessment: 3 assignments, 1 final exam
+MATH1001 Calculus (6 credits)
+  Prerequisite: None
+  Assessment: 5 quizzes, 1 midterm, 1 final exam
+MATH1002 Linear Algebra (6 credits)
+  Prerequisite: None
+  Assessment: 4 assignments, 1 final exam
+
+Year 2
+PHYS2001 Electromagnetism (6 credits)
+  Prerequisite: PHYS1001 and MATH1001
+  Assessment: 4 assignments, 1 midterm, 1 final exam
+PHYS2002 Thermal Physics (6 credits)
+  Prerequisite: PHYS1001
+  Assessment: 3 assignments, 1 final exam
+PHYS2003 Computational Physics (3 credits)
+  Prerequisite: PHYS1002 and MATH1002
+  Assessment: 2 projects
+
+Year 3
+PHYS3001 Quantum Mechanics (6 credits)
+  Prerequisite: PHYS2001 and MATH1002
+  Assessment: 5 assignments, 1 midterm, 1 final exam
+PHYS3002 Statistical Mechanics (6 credits)
+  Prerequisite: PHYS2002 and PHYS3001
+  Assessment: 4 assignments, 1 final exam
+PHYS3003 Research Project (6 credits)
+  Prerequisite: PHYS2003
+  Assessment: 1 proposal, 1 report, 1 presentation
