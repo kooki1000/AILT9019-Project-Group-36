@@ -21,7 +21,7 @@ See the project proposal for the full design and evaluation criteria.
 | Must-have                                   | Status      |
 | ------------------------------------------- | ----------- |
 | 1. Parse requirement document               | built (95% bar not yet measured) |
-| 2. Retrieve reviews from local RIC dataset  | todo        |
+| 2. Retrieve reviews from local RIC dataset  | built (sample dataset; real RIC data pending) |
 | 3. Detect and translate Chinese reviews     | built as a team tool for dataset preparation (not yet wired into the app) |
 | 4. 1–10 difficulty score with fallback rule | built       |
 | 5. Multi-semester plan generator            | built       |
@@ -50,6 +50,11 @@ semesters or add electives; every change is re-checked immediately. Uploaded
 documents and their parsed results are kept in a local SQLite file
 (`.course_planner/app.sqlite3`) and can be deleted from the sidebar. Set
 `COURSE_PLANNER_DB` to store it somewhere else.
+
+The difficulty score also reads student reviews from a local dataset
+(`data/reviews/sample_reviews.csv`); set `COURSE_PLANNER_REVIEWS` to point at
+your own prepared dataset. Without a dataset the score uses the requirement
+document only.
 
 ## Preparing the review dataset (team only)
 

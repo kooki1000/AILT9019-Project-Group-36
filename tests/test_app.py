@@ -6,11 +6,15 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 APP = Path(__file__).parent.parent / "src" / "course_planner" / "app.py"
+REVIEWS_SAMPLE = Path(__file__).parent.parent / "data" / "reviews" / "sample_reviews.csv"
 
 
 @pytest.fixture
 def app(tmp_path, monkeypatch) -> AppTest:
     monkeypatch.setenv("COURSE_PLANNER_DB", str(tmp_path / "app.sqlite3"))
+    # Isolate the review dataset: these tests cover the document-only path;
+    # test_reviews_are_loaded_into_the_score points the app at the sample data.
+    monkeypatch.setenv("COURSE_PLANNER_REVIEWS", str(tmp_path / "no_reviews.csv"))
     return AppTest.from_file(str(APP), default_timeout=30).run()
 
 
@@ -167,6 +171,20 @@ def test_text_without_courses_gives_an_error(app):
     at = click(app, "Build my plan")
     assert "No courses were found" in at.error[0].value
     assert not at.table
+
+
+def test_reviews_are_loaded_into_the_score(app, monkeypatch):
+    monkeypatch.setenv("COURSE_PLANNER_REVIEWS", str(REVIEWS_SAMPLE))
+    at = click(app, "Build my plan")
+    body = text(at)
+    assert "review(s) covering" in body
+    assert "of your courses from the local dataset" in body
+    assert "no student reviews are loaded yet" not in body
+    assert any(
+        "Past student reviews" in row
+        for table in at.table
+        for row in table.value["Basis"]
+    )
 
 
 def test_saved_documents_can_be_deleted_from_the_app(built):
