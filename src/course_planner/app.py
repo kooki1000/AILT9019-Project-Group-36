@@ -29,6 +29,7 @@ from course_planner.models import Course, ParseResult
 from course_planner.parser import parse_completed_courses
 from course_planner.planner import PlanConstraints, check_plan, generate_plan
 from course_planner.prerequisites import parse_prerequisites
+from course_planner.reviews import load_dataset
 from course_planner.storage import DocumentStore
 
 SAMPLE_PATH = Path(__file__).resolve().parents[2] / "data" / "samples" / "sample_requirements.txt"
@@ -115,12 +116,43 @@ def build_plan() -> None:
             )
         )
 
-    scores = {c.code: difficulty_score(c) for c in parsed.courses}
+    review_data = load_dataset()
+    if review_data.reviews:
+        covered = sum(1 for c in parsed.courses if c.code in review_data.sentiments)
+        notices.append(
+            (
+                "info",
+                f"Loaded {len(review_data.reviews)} review(s) covering {covered} of your "
+                "courses from the local dataset.",
+            )
+        )
+        if review_data.excluded:
+            notices.append(
+                (
+                    "warning",
+                    f"{review_data.excluded} review(s) were left out of the difficulty score "
+                    "(not translated or no rating).",
+                )
+            )
+    else:
+        notices.append(
+            (
+                "info",
+                "No local review dataset was found, so difficulty uses the requirement "
+                "document only.",
+            )
+        )
+
+    scores = {
+        c.code: difficulty_score(c, review_data.sentiments.get(c.code, ()))
+        for c in parsed.courses
+    }
     difficulty = {code: s.score for code, s in scores.items()}
     gen = generate_plan(parsed.courses, completed, difficulty, current_constraints())
 
     ss.parsed, ss.completed, ss.scores, ss.difficulty = parsed, completed, scores, difficulty
     ss.gen, ss.semesters, ss.electives = gen, [list(s) for s in gen.semesters], {}
+    ss.review_count = len(review_data.reviews)
 
 
 def reset_plan() -> None:
@@ -244,10 +276,14 @@ def render_results(constraints: PlanConstraints) -> None:
     )
 
     st.subheader("2. Your draft plan")
+    review_basis = (
+        f" and {ss.get('review_count', 0)} student review(s) from the local dataset"
+        if ss.get("review_count", 0)
+        else " only (credits and number of assessments); no student reviews are loaded yet"
+    )
     st.caption(
         "A draft to review, not an official graduation audit. Difficulty is an estimate from "
-        "the requirement document only (credits and number of assessments). No student reviews "
-        "are loaded yet, and it is not an official HKU rating."
+        f"the requirement document{review_basis}. It is not an official HKU rating."
     )
     if flash := ss.pop("flash", None):
         notify(*flash)
@@ -296,7 +332,11 @@ def course_rows(codes: list[str], catalog: dict[str, Course]) -> list[dict[str, 
         score: DifficultyScore | None = ss.scores.get(code)
         basis = "—"
         if score is not None:
-            basis = "ℹ️ Document only (no reviews)" if score.review_free else "Past student reviews"
+            basis = (
+                "ℹ️ Document only (no reviews)"
+                if score.review_free
+                else f"Past student reviews ({score.review_count})"
+            )
             if score.used_defaults:
                 basis += "; missing details estimated"
         rows.append(
