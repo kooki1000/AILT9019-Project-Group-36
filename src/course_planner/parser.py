@@ -42,6 +42,14 @@ _TRAILING_JUNK = " \t-–—:|,;"
 _MARK = r"[*#^†‡]*"
 _DESC_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\.\s+(\S.*)$")
 _PAREN_CREDITS_RE = re.compile(r"\(\s*(\d+)\s*credits?\s*(?:\)|$)", re.IGNORECASE)
+_EACH_CREDITS_RE = re.compile(
+    r"\b(?:one|each|any|following)\b.*\(\s*(\d+)\s*credits?\s*\)\s*:?\s*$", re.IGNORECASE
+)
+_CHOOSE_ONE_RE = re.compile(r"\b(?:choose|select|take) (?:at least )?one of the following", re.I)
+# Numbered regulation text ("4 Candidates ...", "(iv) ...", "LL 8. ...") and placeholder rows.
+_NOT_HEADING_RE = re.compile(
+    r"^(?:\(?\d+[\).]?\s|\([a-z]+\)\s|[A-Z]{1,3}\s?\d+\.\s|[A-Za-z]{2,4}[xX]{3,4})"
+)
 _PROGRAMME_RE = re.compile(r"^(?:(?:MAJOR|MINOR) IN\b|SYLLABUSES? FOR THE DEGREE OF\b)")
 _YEARS = r"[1-6](?:\s*(?:or|,|/)\s*[1-6])*"
 _ROW_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\s+(.+?)\s+(\d{{1,2}})$")
@@ -57,8 +65,8 @@ _FIELD_RE = re.compile(
 )
 _INLINE_FIELD_RE = re.compile(r"\b(pre-?requisites?|assessments?)\s*:\s*(.*)$", re.IGNORECASE)
 _ELECTIVE_HEAD_RE = re.compile(
-    r"elective|to be chosen|chosen from|choose (?:any|\d+|from)|select (?:any|\d+|from)|"
-    r"take (?:one|any|\d+)|in lieu",
+    r"elective|to be chosen|chosen from|choose (?:any|\d+|from|at least one)|"
+    r"select (?:any|\d+|from)|take (?:one|any|\d+)|in lieu|must either|either complete",
     re.IGNORECASE,
 )
 _REQUIRED_HEAD_RE = re.compile(
@@ -70,6 +78,7 @@ _NOISE_RE = re.compile(r"^(?:\d{1,3}|[_\-=]{5,})$")
 _STUCK_DIGIT_RE = re.compile(r"(?<=[a-z])\d$")
 _CONDITION_RE = re.compile(r"consent|permission|approval|standing|at least", re.IGNORECASE)
 MAX_TITLE_LINES = 2
+MAX_HEADING_LENGTH = 90  # wrapped sentences of regulations are longer than headings
 MAX_BARE_CREDITS = 12  # "CODE. Title 3": a bare number this small is the credits
 
 
@@ -190,6 +199,7 @@ class _Description:
     body: list[str] | None = None  # prose lines after the header (checked for headings later)
     choice: bool = False  # the entry above ended in "or": this is one of several alternatives
     ends_or: bool = False  # this entry itself ends in "or" / "; OR"
+    plain: bool = False  # header written without a period: "CODE Title (6 credits)"
 
 
 class _Reader:
@@ -221,6 +231,10 @@ class _Reader:
         self.alt_open = False
         self.rows_closed = False  # a later major/minor section: its tables are not ours
         self.after_or = False  # the previous list entry ended in "or"
+        self.default_credits: int | None = None  # "one of the following ... (6 credits):"
+        # "choose one of the following": covers the list entries below it, but not table rows
+        # (a table's choose-one group is already marked by its "A or B" layout).
+        self.choose = False
         self.regulations = False  # the document opens as "REGULATIONS FOR ..."
 
     # ------------------------------------------------------------------ input
@@ -248,7 +262,7 @@ class _Reader:
         if desc:
             self._start_description(desc.group(1), desc.group(2))
             return True
-        if self.desc is not None:
+        if self.desc is not None and not self.desc.plain:
             return False  # inside a description, a code-led line is prose
         if self.rows_closed:
             return _HEADER_RE.match(line) is not None  # another programme's table: skip it
@@ -282,6 +296,19 @@ class _Reader:
                     return True
         if self.table_mode and not self._looks_labelled(line):
             return False  # prose that merely starts with a course code
+        header = _HEADER_RE.match(line)
+        if (
+            header
+            and "|" not in line
+            and (self.desc is None or self.desc.plain)
+            and not _LABEL_RE.search(line)
+            and _starts_course(line)
+        ):
+            code = header.group(1)
+            rest = re.sub(rf"^{_MARK}", "", line[len(code):]).strip()
+            if _plausible_title(rest):
+                self._start_description(code, rest, plain=True)
+                return True
         if _starts_course(line):
             self._close()
             self.legacy = [line]
@@ -327,14 +354,25 @@ class _Reader:
         if self.legacy is not None:
             self.legacy.append(line)
             return
+        self._apply_heading(line)
+
+    def _apply_heading(self, line: str) -> None:
+        if _CHOOSE_ONE_RE.search(line) and len(line) <= 170 and not line.endswith("."):
+            self.choose = True  # even when the heading also says "Capstone course"
+            each = _EACH_CREDITS_RE.search(line)
+            self.default_credits = int(each.group(1)) if each else None
+            return
         flag = _heading_flag(line)
-        if flag is not None:
-            self.heading = (self.line_no, flag)
-            self.elective = flag
+        if flag is None:
+            return
+        self.choose = False
+        self.heading, self.elective = (self.line_no, flag), flag
+        each = _EACH_CREDITS_RE.search(line)
+        self.default_credits = int(each.group(1)) if each else None
 
     # ------------------------------------------------------------ descriptions
 
-    def _start_description(self, code: str, rest: str) -> None:
+    def _start_description(self, code: str, rest: str, plain: bool = False) -> None:
         self._close()
         raw_rest = rest
         credits: int | None = None
@@ -345,6 +383,8 @@ class _Reader:
             re.search(r"(?:\bor|;)\s*$", text, re.IGNORECASE) for text in (raw_rest, rest)
         )
         weak = False
+        if credits is None and self.default_credits is not None:
+            credits, weak = self.default_credits, True
         trailing = None if found else re.search(r"\s+(\d{1,2})\s*$", rest)
         if trailing and int(trailing.group(1)) <= MAX_BARE_CREDITS:
             credits, weak, found = int(trailing.group(1)), True, True
@@ -352,7 +392,7 @@ class _Reader:
         self.desc = _Description(
             code, [rest.strip()], credits, 0 if found else MAX_TITLE_LINES,
             {"prereq": [], "assess": []}, choice=self.after_or, ends_or=alternative,
-            weak_credits=weak,
+            weak_credits=weak, plain=plain,
         )
 
     def _description_line(self, line: str) -> bool:
@@ -381,8 +421,12 @@ class _Reader:
             joined = " ".join([*desc.title_parts, line])
             found = _PAREN_CREDITS_RE.search(joined)
             wrapped = bool(re.search(r"\(\s*\d*\s*$", desc.title_parts[-1]))
-            if found and not wrapped and _heading_flag(line) is not None:
-                found = None  # "Core courses (12 credits)" is a heading, not this title's tail
+            if found and not wrapped and (
+                _heading_flag(line) is not None
+                or int(found.group(1)) > MAX_BARE_CREDITS
+                or not re.search(r"[a-z]", line)  # ALL CAPS, e.g. "SECOND YEAR (63 credits)"
+            ):
+                found = None  # a heading, not this title's wrapped credits note
             if found:
                 desc.title_parts = [joined[: found.start()].strip()]
                 desc.credits = int(found.group(1))
@@ -448,14 +492,12 @@ class _Reader:
             ends_or = not desc.seen_field and (desc.ends_or or wrapped_or)
             self.after_or = ends_or
             choice = desc.choice or ends_or
-            votes = () if desc.seen_field else (self.elective or choice,)
+            votes = () if desc.seen_field else (self.elective or self.choose or choice,)
             if not desc.seen_field:
                 # A list item. Headings written between list items are read as body text of
                 # the item above; they classify the entries that follow.
                 for line in desc.body or []:
-                    flag = _heading_flag(line)
-                    if flag is not None:
-                        self.heading, self.elective = (self.line_no, flag), flag
+                    self._apply_heading(line)
             self.entries.append(
                 _Entry("desc", course, prereq_text, votes, weak_credits=desc.weak_credits)
             )
@@ -544,13 +586,20 @@ def _clean_title(title: str) -> str:
 
 def _plausible_title(title: str) -> bool:
     """Reject prose that merely begins with a course code (e.g. "ECON1210 and a statistics...")."""
-    return not re.match(r"(and|or)\b", title) and ". " not in title and len(title) <= 120
+    return (
+        not re.match(r"(and|or)\b", title)
+        and ". " not in title
+        and len(title) <= 120
+        and not _CODE_RE.search(title)  # a second course code means a sentence, not a title
+    )
 
 
 def _heading_flag(line: str) -> bool | None:
     """True for an elective-list heading, False for a required one, None for other text."""
-    if len(line) > 110 or line.endswith("."):
+    if len(line) > (170 if line.endswith(":") else MAX_HEADING_LENGTH) or line.endswith("."):
         return None
+    if _NOT_HEADING_RE.match(line) or line[:1].islower():
+        return None  # regulation text, a wrapped sentence, or a "CODExxxx" placeholder row
     if _ELECTIVE_HEAD_RE.search(line):
         return True
     return False if _REQUIRED_HEAD_RE.search(line) else None

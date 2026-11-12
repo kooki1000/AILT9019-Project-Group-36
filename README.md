@@ -79,8 +79,8 @@ The parser reads three layouts, which can be mixed in one document: labelled blo
 descriptions (`COMP1117. Computer programming (6 credits)` followed by prose and
 `Prerequisite:` / `Assessment:` lines), and plain course lists (`CODE. Title (6 credits)` under
 headings such as "Core courses" or "Disciplinary Electives", with or without descriptions later).
-It was checked on the real 2025-26/2026-27 BEcon, BEng(CompSc), BA, BJ, BJ(MAI) and BSocSc
-syllabuses, which differ a lot: see "Known limitations" for what still needs care. A regulations
+It was checked on nine real 2025-26/2026-27 documents (BEcon, BEng(CompSc), BA, BJ, BJ(MAI),
+BSocSc, LLB, BA&LLB and the ENGG regulations), which differ a lot: see "Known limitations" for what still needs care. A regulations
 document (rules but no course list) is recognised and the app says to upload the syllabus.
 
 - **Required vs choice.** Elective lists, "choose one of" pairs, "Focus" lists and courses that
@@ -263,6 +263,9 @@ python skills/build_skill.py        # writes dist/parse-requirements.zip
 - Real syllabuses mostly do not list prerequisites (BEcon lists none; BEng lists them only in
   course descriptions) and BEcon's year-of-study column is not used by the planner, so a plan
   can place a final-year course early. Treat the order as a starting point.
+- Combined programmes (BA&LLB) list long options groups without a heading the parser can read as
+  "choose from", so some options are treated as required; the app reports the ones it cannot
+  schedule. Several faculties omit credits for whole lists (always warned, never guessed).
 - Table layouts that pdf text extraction scrambles (for example BEcon's stacked "A or B" rows)
   can leave a course without credits; the app warns when that happens.
 - The 95% parsing target is met only on constructed documents written by the team.

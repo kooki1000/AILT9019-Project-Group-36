@@ -39,8 +39,8 @@ def test_unreadable_and_empty_files_are_reported(tmp_path, capsys):
 def test_folders_are_expanded_to_supported_files():
     names = {p.name for p in collect([SYLLABI])}
     assert names == {
-        "catalogue_descriptions.txt", "list_style.txt", "table_year_column.txt",
-        "tables_and_descriptions.txt",
+        "catalogue_descriptions.txt", "law_style.txt", "list_style.txt",
+        "table_year_column.txt", "tables_and_descriptions.txt",
     }
 
 

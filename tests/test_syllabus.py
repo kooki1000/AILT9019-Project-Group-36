@@ -24,7 +24,7 @@ def codes(result, elective: bool) -> list[str]:
 
 def test_syllabus_layouts_meet_the_acceptance_bar():
     report = evaluate_folders(LABELS, [SYLLABI])
-    assert len(report.documents) == 4
+    assert len(report.documents) == 5
     assert report.passed, report.report()
     for doc in report.documents:  # exact: nothing missing, nothing invented from prose
         assert not doc.missing_courses and not doc.extra_courses, doc.name
@@ -176,3 +176,56 @@ def test_description_header_with_bare_trailing_credits():
     assert by["AILT1001"].credits == 3
     assert by["AILT1001"].title == "Artificial intelligence literacy I"
     assert by["AILT9017"].title == "Digital literacy through a social sciences lens"
+
+
+def test_law_style_lists_without_a_period_after_the_code():
+    result = parsed("law_style.txt")
+    by = result.by_code()
+    # Wrapped regulation sentences ("Subject to LL11, ...", "4 Candidates shall take ...") are
+    # not headings; the compulsory lists are required, "choose one" lists and electives are not.
+    assert codes(result, elective=False) == [
+        "LLAW1001", "LLAW1002", "AILT1001", "CAES1001", "LLAW1005",
+    ]
+    assert {"LLAW3148", "LLAW3187", "LLAW3016", "LLAW3015", "LLAW3230"} <= set(
+        codes(result, elective=True)
+    )
+    assert "LLAW3205" in by and by["LLAW3205"].elective  # listed under "choose one" earlier
+    assert not any(c.code.startswith(("LLAWxxxx", "CCXX")) for c in result.courses)
+
+
+def test_credits_given_once_for_a_whole_choose_one_list():
+    by = parsed("law_style.txt").by_code()
+    assert by["LLAW3230"].credits == 6  # "(6 credits)" is in the heading above its list
+    assert by["LLAW3148"].credits is None  # that heading gives no credits
+    assert by["LLAW3015"].credits is None  # no per-course credits anywhere: left empty
+
+
+def test_a_section_heading_is_not_taken_as_a_titles_credits():
+    # "SECOND YEAR (63 credits)" follows a creditless entry; 63 is not CAES1001's credits.
+    assert parsed("law_style.txt").by_code()["CAES1001"].credits is None
+
+
+def test_descriptions_and_lists_merge_for_plain_headers():
+    by = parsed("law_style.txt").by_code()
+    assert by["LLAW1001"].assessments == 2 and not by["LLAW1001"].elective
+    assert by["LLAW3205"].prerequisites == (("LLAW2001",),)
+
+
+def test_either_or_requirement_makes_its_listed_courses_choices():
+    result = parse_text(
+        "Core courses (12 credits)\n"
+        "JMSC2001. Media law (6 credits)\n"
+        "Faculty Global Citizenship Requirement (12 credits)\n"
+        "Candidates must either complete FOSS2019, or a combination of two 6-credit\n"
+        "FOSS2019. Global Citizenship internship (12 credits)\n"
+        "FOSS2022. Global intensive learning programme (6 credits)\n"
+    )
+    assert codes(result, elective=False) == ["JMSC2001"]
+    assert set(codes(result, elective=True)) == {"FOSS2019", "FOSS2022"}
+
+
+def test_a_title_containing_another_course_code_is_a_sentence():
+    from course_planner.parser import _plausible_title
+
+    assert not _plausible_title("Basic Spoken Cantonese for Mandarin, or CUND9002 Practical")
+    assert _plausible_title("Basic Spoken Cantonese for Mandarin Speakers")
