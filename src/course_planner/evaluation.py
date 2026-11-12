@@ -119,8 +119,13 @@ def evaluate_directory(
     constraints: PlanConstraints = PlanConstraints(),  # noqa: B008
 ) -> SuiteEvaluation:
     files = sorted(p for p in directory.iterdir() if p.suffix.lower() in SUPPORTED_EXTENSIONS)
+    # Electives and "choose one" options are not required, so they are not planned as if they were.
     cases = [
-        evaluate_case(path.stem, parse_document(path).courses, constraints=constraints)
+        evaluate_case(
+            path.stem,
+            [c for c in parse_document(path).courses if not c.elective],
+            constraints=constraints,
+        )
         for path in files
     ]
     return SuiteEvaluation(tuple(cases))

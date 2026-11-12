@@ -148,7 +148,9 @@ course_code,text,rating,translation
 ```
 
 - `course_code`, `text` and `rating` are required for a row to contribute.
-- The current rating scale is 1 (lowest) to 5 (highest). It is mapped to a
+- The current rating scale is 1 (lowest) to 5 (highest). A rating outside that range
+  (for example 0, or 8 on a 1-10 scale) is left out of the score and counted as excluded; it is
+  never clamped into the hardest or easiest review. It is mapped to a
   difficulty proxy; the app does not perform sentiment analysis on review text.
 - An English review can leave `translation` blank. A Chinese review needs a
   prepared English `translation`; otherwise it is excluded from the score.

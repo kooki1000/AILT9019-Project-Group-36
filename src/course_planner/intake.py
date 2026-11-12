@@ -35,6 +35,8 @@ def read_document(
             else "Something went wrong while reading this file."
         )
         cached = _load_cached(store, data)
+        if cached is not None and not _same_programme(cached, programme):
+            cached = None  # the saved result is for a different degree of the same file
         if cached is not None:
             return cached, [
                 (
@@ -62,6 +64,12 @@ def read_document(
     except Exception:
         notices.append(("warning", "The result could not be saved on this computer."))
     return result, notices
+
+
+def _same_programme(cached: ParseResult, wanted: str | None) -> bool:
+    if not wanted or not cached.programmes:
+        return True
+    return cached.programme.strip().lower() == wanted.strip().lower()
 
 
 def _load_cached(store: DocumentStore, data: bytes) -> ParseResult | None:
