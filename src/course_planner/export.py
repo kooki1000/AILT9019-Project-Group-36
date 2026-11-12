@@ -22,8 +22,13 @@ def plan_to_csv(
     catalog: Mapping[str, Course],
     scores: Mapping[str, DifficultyScore],
     electives: Sequence[str] = (),
+    own_ratings: Mapping[str, float] | None = None,
 ) -> str:
-    """One row per planned course, in semester order."""
+    """One row per planned course, in semester order.
+
+    ``own_ratings`` are the student's self-reported 1-10 ratings; they replace the estimate.
+    """
+    own_ratings = own_ratings or {}
     out = io.StringIO()
     writer = csv.writer(out, lineterminator="\n")
     writer.writerow(COLUMNS)
@@ -32,7 +37,10 @@ def plan_to_csv(
             course = catalog.get(code)
             score = scores.get(code)
             basis = ""
-            if score is not None:
+            own = own_ratings.get(code)
+            if own is not None:
+                basis = "Your own rating"
+            elif score is not None:
                 basis = (
                     "Document only (no reviews)"
                     if score.review_free
@@ -44,7 +52,7 @@ def plan_to_csv(
                     code,
                     _safe(course.title) if course else "",
                     course.credits if course and course.credits is not None else "",
-                    f"{score.score:.1f}" if score else "",
+                    f"{own:.1f}" if own is not None else f"{score.score:.1f}" if score else "",
                     basis,
                     "Elective" if code in electives else "Required",
                 ]

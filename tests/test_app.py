@@ -221,3 +221,38 @@ def test_reviews_behind_scores_are_shown_with_original_text(app, monkeypatch):
 
 def test_no_review_panel_without_reviews(built):
     assert not built.expander
+
+
+def add_arts_elective(at):
+    at.text_input(key="el_code").set_value("ARTS1234")
+    return click(at, "Add elective")
+
+
+def rate(at, code, value):
+    at.selectbox(key="rate_code").set_value(code)
+    at.number_input(key="rate_value").set_value(value)
+    return click(at, "Use my rating")
+
+
+def test_rating_does_not_outlive_its_elective(built):
+    built = rate(add_arts_elective(built), "ARTS1234", 8.0)
+    assert built.session_state["self_ratings"] == {"ARTS1234": 8.0}
+    built.selectbox(key="el_remove").set_value("ARTS1234")
+    built = click(built, "Remove elective")
+    assert built.session_state["self_ratings"] == {}
+
+    built = rate(add_arts_elective(built), "ARTS1234", 8.0)
+    built = click(built, "Reset to the suggested plan")
+    assert built.session_state["self_ratings"] == {}
+    built = add_arts_elective(built)
+    row = next(r for t in built.table for _, r in t.value.iterrows() if r["Course"] == "ARTS1234")
+    assert "Your own rating" not in row["Basis"]
+
+
+def test_elective_with_dataset_reviews_is_scored_with_them(app, monkeypatch, tmp_path):
+    reviews = tmp_path / "reviews.csv"
+    reviews.write_text("course_code,text,rating,translation\nARTS1234,Hard but fair,2,\n")
+    monkeypatch.setenv("COURSE_PLANNER_REVIEWS", str(reviews))
+    at = add_arts_elective(click(app, "Build my plan"))
+    row = next(r for t in at.table for _, r in t.value.iterrows() if r["Course"] == "ARTS1234")
+    assert row["Basis"].startswith("Past student reviews (1)")

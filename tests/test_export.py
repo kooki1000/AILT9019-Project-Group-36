@@ -35,3 +35,10 @@ def test_formula_like_titles_are_neutralised():
 
 def test_empty_plan_is_just_the_header():
     assert plan_to_csv([], {}, {}).strip() == ",".join(COLUMNS)
+
+
+def test_own_rating_replaces_the_estimate_in_the_export():
+    catalog = {"A1": Course("A1", "Intro", 6, assessments=3)}
+    scores = {"A1": difficulty_score(catalog["A1"])}
+    row = rows(plan_to_csv([["A1"]], catalog, scores, own_ratings={"A1": 9.5}))[0]
+    assert row["Difficulty (1-10)"] == "9.5" and row["Basis"] == "Your own rating"

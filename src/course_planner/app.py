@@ -155,6 +155,7 @@ def build_plan() -> None:
     ss.gen, ss.semesters, ss.electives = gen, [list(s) for s in gen.semesters], {}
     ss.review_count = len(review_data.reviews)
     ss.self_ratings = {}
+    ss.sentiments = review_data.sentiments
     ss.reviews_by_course = {}
     for review in review_data.reviews:
         ss.reviews_by_course.setdefault(review.course_code, []).append(review)
@@ -162,6 +163,8 @@ def build_plan() -> None:
 
 def reset_plan() -> None:
     ss.semesters = [list(s) for s in ss.gen.semesters]
+    for code in ss.electives:
+        ss.self_ratings.pop(code, None)
     ss.electives = {}
     ss.flash = ("info", "Plan reset to the suggested plan.")
 
@@ -199,7 +202,8 @@ def add_elective() -> None:
         assessments=int(ss.get("el_assess", 0)) or None,
     )
     ss.electives[code] = course
-    score = difficulty_score(course)
+    score = difficulty_score(course, ss.get("sentiments", {}).get(code, ()))
+    ss.self_ratings.pop(code, None)
     ss.scores[code], ss.difficulty[code] = score, score.score
     ss.semesters = add_course(ss.semesters, code, ss.get("el_target", 0))
     ss.flash = ("info", f"Added elective {code}. See the re-check below.")
@@ -210,6 +214,7 @@ def remove_elective() -> None:
     if code in ss.electives:
         ss.semesters = remove_course(ss.semesters, code)
         del ss.electives[code]
+        ss.self_ratings.pop(code, None)
         ss.flash = ("info", f"Removed elective {code}.")
 
 
@@ -348,7 +353,7 @@ def render_results(constraints: PlanConstraints) -> None:
     render_reviews(catalog)
     st.download_button(
         "Download plan as CSV",
-        plan_to_csv(ss.semesters, catalog, ss.scores, list(ss.electives)),
+        plan_to_csv(ss.semesters, catalog, ss.scores, list(ss.electives), ss.self_ratings),
         file_name="course_plan.csv",
         mime="text/csv",
     )
