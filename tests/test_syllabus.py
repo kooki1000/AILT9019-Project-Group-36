@@ -24,7 +24,7 @@ def codes(result, elective: bool) -> list[str]:
 
 def test_syllabus_layouts_meet_the_acceptance_bar():
     report = evaluate_folders(LABELS, [SYLLABI])
-    assert len(report.documents) == 3
+    assert len(report.documents) == 4
     assert report.passed, report.report()
     for doc in report.documents:  # exact: nothing missing, nothing invented from prose
         assert not doc.missing_courses and not doc.extra_courses, doc.name
@@ -127,3 +127,52 @@ def test_prerequisite_list_wrapping_with_a_leading_connector_is_joined():
         "or MATH2014 or MATH1013\n"
     ).courses[0]
     assert course.prerequisites == (("COMP2119", "COMP2118"), ("MATH1853", "MATH2014", "MATH1013"))
+
+
+def test_course_lists_are_classified_by_their_headings():
+    result = parsed("list_style.txt")
+    # Core courses are required; "A or / B or / C" alternatives, "in lieu" lists and
+    # elective lists are not. Lines of description after a list entry do not hide a heading.
+    assert codes(result, elective=False) == ["CAES1001", "JMSC1001", "JMSC1011"]
+    assert {"CSSC9001", "CUND9001", "CUND9002", "CHIN9501"} <= set(codes(result, elective=True))
+    assert {"JMSC2005", "JMSC2008"} <= set(codes(result, elective=True))
+
+
+def test_list_entries_are_merged_with_their_later_description():
+    by = parsed("list_style.txt").by_code()
+    assert by["JMSC2005"].prerequisites == (("JMSC1011",),)
+    assert by["JMSC1001"].assessments == 2  # "Assessment:" in the middle of a line
+    assert not by["JMSC1001"].elective  # described later, but listed as core
+    assert by["CAES1001"].title == "Academic Communication in English"  # footnote cut off
+    assert by["CUND9002"].title.startswith("Practical Chinese and Hong Kong society")
+
+
+def test_missing_credits_in_a_list_are_warned_about():
+    warnings = parsed("list_style.txt").warnings
+    assert any("CAES1001: credits were not found" in w for w in warnings)
+    assert any("CHIN9501: credits were not found" in w for w in warnings)
+
+
+def test_regulations_document_explains_why_there_are_no_courses():
+    result = parse_text(
+        "REGULATIONS FOR THE DEGREE OF\nBACHELOR OF ENGINEERING (BEng)\n"
+        "Candidates may take CUND9001 or CUND9002 as a language course.\n"
+    )
+    assert result.courses == []
+    assert any("regulations document" in w for w in result.warnings)
+
+
+def test_a_missing_closing_bracket_after_credits_is_tolerated():
+    text = "LLAW3146. Multiculturalism and the law (6 credits\nPrerequisite: Nil\n"
+    course = parse_text(text).courses[0]
+    assert course.credits == 6 and course.title == "Multiculturalism and the law"
+
+
+def test_description_header_with_bare_trailing_credits():
+    by = parse_text(
+        "AILT1001. Artificial intelligence literacy I 3\n"
+        "AILT9017. Digital literacy through a social sciences lens* 3\n"
+    ).by_code()
+    assert by["AILT1001"].credits == 3
+    assert by["AILT1001"].title == "Artificial intelligence literacy I"
+    assert by["AILT9017"].title == "Digital literacy through a social sciences lens"

@@ -1,0 +1,11 @@
+{
+  "CAES1001": {"prerequisites": []},
+  "CSSC9001": {"credits": 6, "prerequisites": []},
+  "CUND9001": {"prerequisites": []},
+  "CUND9002": {"prerequisites": []},
+  "CHIN9501": {"prerequisites": []},
+  "JMSC1001": {"credits": 6, "assessments": 2, "prerequisites": []},
+  "JMSC1011": {"credits": 6, "prerequisites": []},
+  "JMSC2005": {"credits": 6, "assessments": 1, "prerequisites": [["JMSC1011"]]},
+  "JMSC2008": {"credits": 6, "prerequisites": []}
+}
