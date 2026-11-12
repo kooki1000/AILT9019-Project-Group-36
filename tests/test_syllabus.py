@@ -334,3 +334,47 @@ def test_a_no_course_alternative_is_kept_only_when_its_course_is_in_the_document
     assert by["GRMN2001"].prerequisites == (("GRMN1001",),)  # usable for ordering
     assert by["MATH1851"].prerequisites == ()  # MATH1011 is not in the document
     assert any("MATH1851" in w and "not (only) course codes" in w for w in result.warnings)
+
+
+def test_a_repeated_page_header_does_not_invent_programmes():
+    # Regression: a running "SYLLABUS" header after a table row created a second "programme"
+    # named after that row, and the courses after it silently disappeared.
+    result = parse_text(
+        "BACHELOR OF SCIENCE\n"
+        "SYLLABUS\n"
+        "Course Code Course title Credits\n"
+        "MATH1001 Calculus 6\n"
+        "MATH1002 Algebra 6\n"
+        "SYLLABUS\n"
+        "Course Code Course title Credits\n"
+        "MATH2001 Analysis 6\n"
+    )
+    assert result.programmes == []
+    assert {c.code for c in result.courses} == {"MATH1001", "MATH1002", "MATH2001"}
+
+
+def test_the_same_programme_title_twice_is_one_programme():
+    result = parse_text(
+        "COMPUTER ENGINEERING\nSYLLABUS\nENGG1000 Fundamentals (6 credits)\n"
+        "COMPUTER ENGINEERING\nSYLLABUS\nENGG1101 Challenges (6 credits)\n"
+    )
+    assert result.programmes == [] and len(result.courses) == 2
+
+
+def test_a_heading_with_a_total_is_not_the_credits_of_the_entry_above():
+    # Regression: "Language Courses (12 credits)" became LLAW3148's credits, and the 6 credits
+    # of an earlier "one of the following" heading leaked onto the courses below it.
+    by = parse_text(
+        "Choose at least one of the following courses (6 credits):\n"
+        "LLAW3148 Clinical legal education\n"
+        "Language Courses (12 credits)\n"
+        "CHIN9501 Chinese as a foreign language I\n"
+    ).by_code()
+    assert by["LLAW3148"].credits == 6  # from its own heading
+    assert by["CHIN9501"].credits is None  # a different section: not guessed
+
+
+def test_a_title_ending_in_a_number_is_not_given_that_number_as_credits():
+    by = parse_text("KORE1001. Korean 2\nKORE1002. Korean language 3\n").by_code()
+    assert by["KORE1001"].credits is None and by["KORE1001"].title == "Korean 2"
+    assert by["KORE1002"].credits == 3  # 3 is a usual credit value

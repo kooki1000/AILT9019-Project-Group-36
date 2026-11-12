@@ -87,7 +87,9 @@ _STUCK_DIGIT_RE = re.compile(r"(?<=[a-z])\d$")
 _CONDITION_RE = re.compile(r"consent|permission|approval|standing|at least", re.IGNORECASE)
 MAX_TITLE_LINES = 2
 MAX_HEADING_LENGTH = 90  # wrapped sentences of regulations are longer than headings
-MAX_BARE_CREDITS = 12  # "CODE. Title 3": a bare number this small is the credits
+# "CODE. Title 3": a bare number is taken as credits only if it is a usual credit value.
+BARE_CREDIT_VALUES = (0, 3, 6, 9, 12)
+MAX_WRAPPED_CREDITS = 6  # a heading's "(12 credits)" total is not a wrapped title's credits
 
 
 class UnsupportedFileError(ValueError):
@@ -390,7 +392,14 @@ class _Reader:
 
     def _starts_programme(self, title: str) -> bool:
         """A standalone "SYLLABUS" line opens a programme; ``title`` is the line above it."""
-        if not title or len(title) > 90 or title.endswith("."):
+        if (
+            not title
+            or len(title) > 90
+            or title.endswith(".")
+            or title[-1:].isdigit()
+            or _CODE_RE.search(title)  # a table row above a repeated page header
+            or title.strip() in self.names  # the same title again: a running header
+        ):
             return False
         self._close()
         if self.names:  # a further programme: start from a clean slate
@@ -409,6 +418,8 @@ class _Reader:
             return
         flag = _heading_flag(line)
         if flag is None:
+            if _is_plain_heading(line):
+                self.default_credits = None  # a new section: the per-course credits ended
             return
         self.choose = False
         self.heading, self.elective = (self.line_no, flag), flag
@@ -431,7 +442,7 @@ class _Reader:
         if credits is None and self.default_credits is not None:
             credits, weak = self.default_credits, True
         trailing = None if found else re.search(r"\s+(\d{1,2})\s*$", rest)
-        if trailing and int(trailing.group(1)) <= MAX_BARE_CREDITS:
+        if trailing and int(trailing.group(1)) in BARE_CREDIT_VALUES:
             credits, weak, found = int(trailing.group(1)), True, True
             rest = rest[: trailing.start()]
         self.desc = _Description(
@@ -468,7 +479,7 @@ class _Reader:
             wrapped = bool(re.search(r"\(\s*\d*\s*$", desc.title_parts[-1]))
             if found and not wrapped and (
                 _heading_flag(line) is not None
-                or int(found.group(1)) > MAX_BARE_CREDITS
+                or int(found.group(1)) > MAX_WRAPPED_CREDITS
                 or not re.search(r"[a-z]", line)  # ALL CAPS, e.g. "SECOND YEAR (63 credits)"
             ):
                 found = None  # a heading, not this title's wrapped credits note
@@ -586,15 +597,11 @@ class _Reader:
             result.courses.append(course)
             if course.credits is None:
                 result.warnings.append(f"{course.code}: credits were not found in the document.")
-            text = entry.prereq_text.strip()
-            if text and not is_none_text(text) and (
-                not course.prerequisites or _CONDITION_RE.search(text)
-            ):
-                shown = text if len(text) <= 80 else text[:77] + "..."
-                result.warnings.append(
-                    f"{course.code}: the prerequisite \"{shown}\" is not (only) course codes, "
-                    "so it was not checked."
-                )
+            warning = _unchecked_prerequisite_warning(
+                course.code, entry.prereq_text, course.prerequisites
+            )
+            if warning:
+                result.warnings.append(warning)
         if not result.courses:
             result.warnings.append("No course codes (like COMP1117) were found in this document.")
             if self.regulations:
@@ -603,7 +610,6 @@ class _Reader:
                     "Upload the matching syllabus ('Syllabuses for the degree of ...')."
                 )
         return result
-
 
     def _chosen_programme(self, result: ParseResult) -> int:
         if self.wanted:
@@ -616,6 +622,19 @@ class _Reader:
                 f"showing '{self.names[0]}'."
             )
         return 0
+
+
+def _unchecked_prerequisite_warning(
+    code: str, text: str, groups: tuple[tuple[str, ...], ...]
+) -> str | None:
+    """Say so when a prerequisite's wording cannot be fully checked (no codes, or a condition)."""
+    text = text.strip()
+    if not text or is_none_text(text):
+        return None
+    if groups and not _CONDITION_RE.search(text):
+        return None
+    shown = text if len(text) <= 80 else text[:77] + "..."
+    return f'{code}: the prerequisite "{shown}" is not (only) course codes, so it was not checked.'
 
 
 def _soft_groups(entry: _Entry, in_document: set[str]) -> tuple[tuple[str, ...], ...]:
@@ -692,6 +711,18 @@ def _plausible_title(title: str) -> bool:
         and ". " not in title
         and len(title) <= 120
         and not _CODE_RE.search(title)  # a second course code means a sentence, not a title
+    )
+
+
+def _is_plain_heading(line: str) -> bool:
+    """A short, capitalised line without sentence punctuation, whatever it is about."""
+    limit = 170 if line.endswith(":") else MAX_HEADING_LENGTH
+    return (
+        len(line) <= limit
+        and not line.endswith(".")
+        and not _NOT_HEADING_RE.match(line)
+        and not line[:1].islower()
+        and not line.startswith("(")
     )
 
 
@@ -834,12 +865,16 @@ def parse_csv(text: str) -> ParseResult:
         if credits is None:
             result.warnings.append(f"{code}: credits were not found in the document.")
         assessments = cell("assessments")
+        prerequisites = parse_prerequisites(cell("prerequisites"))
+        warning = _unchecked_prerequisite_warning(code, cell("prerequisites"), prerequisites)
+        if warning:
+            result.warnings.append(warning)
         result.courses.append(
             Course(
                 code=code,
                 title=cell("title"),
                 credits=credits,
-                prerequisites=parse_prerequisites(cell("prerequisites")),
+                prerequisites=prerequisites,
                 assessments=count_assessments(assessments),
             )
         )
