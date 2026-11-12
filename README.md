@@ -60,6 +60,10 @@ The difficulty score also reads prepared review rows from a local dataset
 your own prepared dataset. Without a dataset the score uses the requirement
 document only.
 
+Under **Adjust your plan** you can also give a course your own 1-10 difficulty
+rating. It replaces the estimate for that course (marked "Your own rating") and
+the plan's totals and evenness are recalculated; you can remove it again.
+
 ## Reproducible sample
 
 With the bundled requirement document, bundled demonstration review CSV and

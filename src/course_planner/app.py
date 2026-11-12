@@ -153,6 +153,7 @@ def build_plan() -> None:
     ss.parsed, ss.completed, ss.scores, ss.difficulty = parsed, completed, scores, difficulty
     ss.gen, ss.semesters, ss.electives = gen, [list(s) for s in gen.semesters], {}
     ss.review_count = len(review_data.reviews)
+    ss.self_ratings = {}
 
 
 def reset_plan() -> None:
@@ -206,6 +207,24 @@ def remove_elective() -> None:
         ss.semesters = remove_course(ss.semesters, code)
         del ss.electives[code]
         ss.flash = ("info", f"Removed elective {code}.")
+
+
+def rate_course() -> None:
+    code = ss.get("rate_code")
+    if code is None:
+        return
+    value = float(ss.get("rate_value", 5))
+    ss.self_ratings[code] = value
+    ss.difficulty[code] = value
+    ss.flash = ("info", f"Your rating of {value:g}/10 now counts for {code}.")
+
+
+def clear_rating() -> None:
+    code = ss.get("rate_clear")
+    if code in ss.self_ratings:
+        del ss.self_ratings[code]
+        ss.difficulty[code] = ss.scores[code].score
+        ss.flash = ("info", f"Removed your rating for {code}; the estimate is back.")
 
 
 def delete_saved() -> None:
@@ -331,7 +350,10 @@ def course_rows(codes: list[str], catalog: dict[str, Course]) -> list[dict[str, 
         course = catalog.get(code)
         score: DifficultyScore | None = ss.scores.get(code)
         basis = "—"
-        if score is not None:
+        own = ss.get("self_ratings", {}).get(code)
+        if own is not None:
+            basis = "Your own rating (replaces the estimate)"
+        elif score is not None:
             basis = (
                 "ℹ️ Document only (no reviews)"
                 if score.review_free
@@ -344,7 +366,9 @@ def course_rows(codes: list[str], catalog: dict[str, Course]) -> list[dict[str, 
                 "Course": code,
                 "Title": course.title if course else "",
                 "Credits": str(course.credits) if course and course.credits is not None else "?",
-                "Difficulty (1-10)": f"{score.score:.1f}" if score else "?",
+                "Difficulty (1-10)": (
+                    f"{own:.1f}" if own is not None else f"{score.score:.1f}" if score else "?"
+                ),
                 "Basis": basis,
                 "Type": "Elective" if code in ss.electives else "Required",
             }
@@ -409,6 +433,18 @@ def render_adjust(catalog: dict[str, Course], constraints: PlanConstraints) -> N
             format_func=lambda i: f"Semester {i + 1}" if i < n else f"New semester ({n + 1})",
         )
         st.form_submit_button("Add elective", on_click=add_elective)
+
+    with st.form("rate_form"):
+        st.markdown("**Rate a course's difficulty yourself (optional)**")
+        st.caption("Your own 1-10 rating replaces the estimate for that course in the plan.")
+        st.selectbox("Course", planned, key="rate_code")
+        st.number_input("Your rating (1 easy - 10 hard)", 1.0, 10.0, 5.0, 0.5, key="rate_value")
+        st.form_submit_button("Use my rating", on_click=rate_course)
+
+    if ss.self_ratings:
+        with st.form("clear_rating_form"):
+            st.selectbox("Remove my rating for", list(ss.self_ratings), key="rate_clear")
+            st.form_submit_button("Remove my rating", on_click=clear_rating)
 
     if ss.electives:
         with st.form("remove_form"):
