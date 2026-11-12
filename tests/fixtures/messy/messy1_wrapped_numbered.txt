@@ -1,0 +1,37 @@
+Bachelor of Science in Data Science - curriculum structure (constructed test document, fictional)
+Academic year 2026-27. Students must complete all courses below.
+
+A. Foundation courses and mathematics
+1. DASC1001 Introduction to Data Science (6 credits)
+   Pre-requisite: nil
+   Assessment: 2 assignments, 1 project, 1 final exam
+2. DASC1002 Programming for Data Analysis (6 credits)
+   Pre-requisite: nil
+   Assessment: 4 assignments, 1 midterm
+3. MATH1005 Calculus and Linear Algebra (6 credits)
+   Pre-requisite: Level 3 in HKDSE Mathematics Extended Module
+   Assessment: 3 quizzes, 1 midterm, 1 final exam
+
+B. Core courses and electives
+DASC2001 Statistical Learning (6 credits)
+Prerequisites: DASC1001 and DASC1002 and
+MATH1005
+Assessment: 3 assignments, 1 final exam
+
+DASC2002 Databases for Analytics (6 credits)
+Prerequisites: DASC1002 or COMP1117
+Assessment: 2 assignments, 1 project, 1 final exam
+
+C. Advanced courses
+DASC3001 Machine Learning Systems (6 credits)
+Prerequisites: DASC2001 and (DASC2002 or
+COMP2113)
+Assessment: 2 assignments, 1 project, 1 final exam
+DASC3002 Data Ethics and Governance (3 credits)
+Prerequisite: Completion of 48 credits
+Assessment: 2 essays, 1 presentation
+
+Capstone
+DASC4001 Capstone Project (12 credits)
+Prerequisite: DASC3001
+Assessment: 1 proposal, 1 report, 1 demonstration

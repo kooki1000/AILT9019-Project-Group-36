@@ -1,0 +1,12 @@
+{
+  "PHYS1001": {"credits": 6, "assessments": 6, "prerequisites": []},
+  "PHYS1002": {"credits": 6, "assessments": 4, "prerequisites": []},
+  "MATH1001": {"credits": 6, "assessments": 7, "prerequisites": []},
+  "MATH1002": {"credits": 6, "assessments": 5, "prerequisites": []},
+  "PHYS2001": {"credits": 6, "assessments": 6, "prerequisites": [["PHYS1001"], ["MATH1001"]]},
+  "PHYS2002": {"credits": 6, "assessments": 4, "prerequisites": [["PHYS1001"]]},
+  "PHYS2003": {"credits": 3, "assessments": 2, "prerequisites": [["PHYS1002"], ["MATH1002"]]},
+  "PHYS3001": {"credits": 6, "assessments": 7, "prerequisites": [["PHYS2001"], ["MATH1002"]]},
+  "PHYS3002": {"credits": 6, "assessments": 5, "prerequisites": [["PHYS2002"], ["PHYS3001"]]},
+  "PHYS3003": {"credits": 6, "assessments": 3, "prerequisites": [["PHYS2003"]]}
+}

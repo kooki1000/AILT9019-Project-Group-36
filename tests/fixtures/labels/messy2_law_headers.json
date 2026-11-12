@@ -1,0 +1,12 @@
+{
+  "ENGL1001": {"credits": 3, "assessments": 3, "prerequisites": []},
+  "ENGL1002": {"credits": 3, "assessments": 3, "prerequisites": [["ENGL1001"]]},
+  "LAWS1001": {"credits": 6, "assessments": 2, "prerequisites": []},
+  "LAWS1002": {"credits": 6, "assessments": 3, "prerequisites": [["LAWS1001"]]},
+  "LAWS2001": {"credits": 6, "assessments": 4, "prerequisites": [["LAWS1001"], ["LAWS1002"]]},
+  "LAWS2002": {"credits": 6, "assessments": 2, "prerequisites": [["LAWS1001"]]},
+  "LAWS2003": {"credits": 6, "assessments": 2, "prerequisites": [["LAWS2001", "LAWS2002"]]},
+  "LAWS3001": {"credits": 6, "assessments": 2, "prerequisites": [["LAWS2001"], ["LAWS2003"]]},
+  "LAWS3002": {"credits": 3, "assessments": 2, "prerequisites": [["LAWS2002"], ["ENGL1002"]]},
+  "LAWS4001": {"credits": 6, "assessments": 2, "prerequisites": [["LAWS3001"]]}
+}
