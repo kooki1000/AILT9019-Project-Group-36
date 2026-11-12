@@ -1,0 +1,16 @@
+{
+  "ACCT1001": {"credits": 6, "assessments": 4, "prerequisites": []},
+  "ECON1001": {"credits": 6, "assessments": 4, "prerequisites": []},
+  "ECON1002": {"credits": 6, "assessments": 4, "prerequisites": []},
+  "MGMT1001": {"credits": 3, "assessments": 2, "prerequisites": []},
+  "STAT1101": {"credits": 6, "assessments": 6, "prerequisites": []},
+  "ACCT2001": {"credits": 6, "assessments": 5, "prerequisites": [["ACCT1001"]]},
+  "ACCT2002": {"credits": 6, "assessments": 5, "prerequisites": [["ACCT1001"]]},
+  "FINA2001": {"credits": 6, "assessments": 5, "prerequisites": [["ACCT1001"], ["ECON1001"]]},
+  "FINA2002": {"credits": 6, "assessments": 4, "prerequisites": [["ECON1002"]]},
+  "MGMT2001": {"credits": 3, "assessments": 2, "prerequisites": [["MGMT1001"]]},
+  "ACCT3001": {"credits": 6, "assessments": 4, "prerequisites": [["ACCT2002"]]},
+  "FINA3001": {"credits": 6, "assessments": 5, "prerequisites": [["FINA2001"], ["STAT1101"]]},
+  "FINA3002": {"credits": 6, "assessments": 4, "prerequisites": [["FINA3001"]]},
+  "MGMT3001": {"credits": 6, "assessments": 3, "prerequisites": [["MGMT2001"], ["ACCT2001"]]}
+}
