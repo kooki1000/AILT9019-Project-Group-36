@@ -62,6 +62,8 @@ def result_to_json(result: ParseResult) -> str:
                 for c in result.courses
             ],
             "warnings": result.warnings,
+            "programmes": result.programmes,
+            "programme": result.programme,
         }
     )
 
@@ -81,6 +83,8 @@ def result_from_json(text: str) -> ParseResult:
             for c in data["courses"]
         ],
         warnings=list(data["warnings"]),
+        programmes=list(data.get("programmes", [])),
+        programme=data.get("programme", ""),
     )
 
 

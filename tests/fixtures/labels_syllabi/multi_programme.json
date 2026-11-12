@@ -1,0 +1,7 @@
+{
+  "ENGG1000": {"credits": 6, "assessments": 1, "prerequisites": []},
+  "COMP2113": {"credits": 6, "assessments": 2, "prerequisites": [["ENGG1000", "ENGG1330"]]},
+  "ELEC2441": {"credits": 6, "prerequisites": []},
+  "COMP3230": {"credits": 6, "prerequisites": []},
+  "ELEC3141": {"credits": 6, "assessments": 1, "prerequisites": [["ELEC2147"]]}
+}

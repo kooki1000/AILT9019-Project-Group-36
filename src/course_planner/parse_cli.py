@@ -2,7 +2,8 @@
 
     python -m course_planner.parse_cli requirements.pdf
 
-Prints JSON with ``courses`` and ``warnings``. Exit code 0 on success, 1 when the
+Prints JSON with ``courses`` and ``warnings`` (and ``programmes`` when a document holds several
+degrees; pick one with ``--programme NAME``). Exit code 0 on success, 1 when the
 file could not be read or no courses were found, 2 for bad usage. Nothing is
 stored and nothing leaves the machine.
 """
@@ -32,17 +33,27 @@ def to_json(result) -> dict:
             for c in result.courses
         ],
         "warnings": result.warnings,
+        "programmes": result.programmes,
+        "programme": result.programme,
     }
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
+    programme = None
+    if "--programme" in args:
+        at = args.index("--programme")
+        programme = args[at + 1] if at + 1 < len(args) else None
+        del args[at : at + 2]
     if len(args) != 1:
-        print("usage: python -m course_planner.parse_cli <PDF, .txt or .csv file>")
+        print(
+            "usage: python -m course_planner.parse_cli <PDF, .txt or .csv file> "
+            "[--programme NAME]"
+        )
         return 2
     path = Path(args[0])
     try:
-        result = parse_document(path)
+        result = parse_document(path, programme=programme)
     except (UnsupportedFileError, EmptyDocumentError, OSError) as exc:
         print(json.dumps({"error": str(exc)}, ensure_ascii=False))
         return 1

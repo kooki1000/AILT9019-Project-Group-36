@@ -11,7 +11,7 @@ Notice = tuple[str, str]
 
 
 def read_document(
-    data: bytes, name: str, store: DocumentStore
+    data: bytes, name: str, store: DocumentStore, programme: str | None = None
 ) -> tuple[ParseResult | None, list[Notice]]:
     """Parse ``data``; returns ``(result, notices)`` where ``result`` is ``None`` on failure.
 
@@ -21,10 +21,11 @@ def read_document(
       uses the saved result for the exact same bytes, if one exists;
     * otherwise the student gets a message saying what went wrong and what to try.
 
-    An unsupported file type never falls back: it is rejected outright.
+    An unsupported file type never falls back: it is rejected outright. ``programme`` picks one
+    degree when the document contains several.
     """
     try:
-        result = parse_document(data, name)
+        result = parse_document(data, name, programme)
     except UnsupportedFileError as exc:
         return None, [("error", str(exc))]
     except Exception as exc:  # EmptyDocumentError, or anything unexpected from a PDF library

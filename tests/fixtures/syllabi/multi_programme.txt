@@ -1,0 +1,32 @@
+Subject to approval
+COMPUTER ENGINEERING
+SYLLABUS
+Engineering Core Courses (12 credits)
+Course Code Course No. of credits
+ENGG1000 Engineering fundamentals 6
+COMP2113 Programming technologies 6
+Discipline Core Courses (12 credits)
+Course Code Course No. of credits
+ELEC2441 Computer organization 6
+COMP3230 Operating systems 6
+ELECTRICAL ENGINEERING
+SYLLABUS
+Engineering Core Courses (12 credits)
+Course Code Course No. of credits
+ENGG1000 Engineering fundamentals 6
+ELEC2147 Electrical energy technology 6
+Discipline Core Courses (6 credits)
+Course Code Course No. of credits
+ELEC3141 Power systems 6
+Minor in Electrical and Computer Engineering
+Course Code Course No. of credits
+ELEC9999 Minor only course 6
+ENGG1000 Engineering fundamentals (6 credits)
+Introduces engineering.
+Assessment: 100% continuous assessment
+COMP2113 Programming technologies (6 credits)
+Prerequisite: ENGG1000 or ENGG1330
+Assessment: 70% continuous assessment, 30% examination
+ELEC3141 Power systems (6 credits)
+Prerequisite: ELEC2147
+Assessment: 100% examination
