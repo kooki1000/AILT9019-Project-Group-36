@@ -64,6 +64,9 @@ After building a plan, the **Student reviews behind each score** panel lists eve
 review for the planned courses: rating, original text, English translation and
 whether it was used in the score, so any difficulty number can be traced back.
 
+**Download plan as CSV** exports the current plan (including any manual edits and
+electives) with semester, course, credits, difficulty and the basis of each score.
+
 ## Reproducible sample
 
 With the bundled requirement document, bundled demonstration review CSV and
