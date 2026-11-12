@@ -208,3 +208,16 @@ def test_own_rating_replaces_the_estimate_and_can_be_removed(built):
     built = click(built, "Remove my rating")
     row = next(r for t in built.table for _, r in t.value.iterrows() if r["Course"] == code)
     assert row["Difficulty (1-10)"] == before[code] and "Your own rating" not in row["Basis"]
+
+
+def test_reviews_behind_scores_are_shown_with_original_text(app, monkeypatch):
+    monkeypatch.setenv("COURSE_PLANNER_REVIEWS", str(REVIEWS_SAMPLE))
+    at = click(app, "Build my plan")
+    assert not at.exception
+    assert [e.label for e in at.expander] == ["Student reviews behind each score"]
+    shown = [t.value for t in at.table if "Original text" in t.value.columns]
+    assert shown and "Good intro course" in shown[0]["Original text"].iloc[0]
+
+
+def test_no_review_panel_without_reviews(built):
+    assert not built.expander

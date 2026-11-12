@@ -146,6 +146,12 @@ def parse_text(text: str) -> ParseResult:
     return result
 
 
+def _is_unfinished(parts: list[str]) -> bool:
+    """True when the text collected so far stops at a connector or inside brackets."""
+    text = " ".join(parts).rstrip()
+    return bool(_CONNECTOR_END_RE.search(text)) or text.count("(") > text.count(")")
+
+
 def _starts_course(line: str) -> bool:
     match = _HEADER_RE.match(line)
     if not match:
@@ -168,14 +174,22 @@ def _parse_block(block: list[str], warnings: list[str]) -> Course:
     values: dict[str, list[str]] = {"prereq": [], "assess": []}
     current: str | None = None
 
-    segments = [seg for line in block for seg in line.split("|")]
-    segments[0] = header_match.group(2)  # drop the leading code from the first segment
-    for segment in segments:
+    # Each "|"-separated field is a segment; ``new_line`` marks the first field of a
+    # physical line. The first line loses its leading code.
+    lines = [header_match.group(2), *block[1:]]
+    segments = [
+        (seg, position == 0) for line in lines for position, seg in enumerate(line.split("|"))
+    ]
+    for segment, new_line in segments:
         pieces = _LABEL_RE.split(segment)
         lead, labelled = pieces[0], zip(pieces[1::2], pieces[2::2], strict=True)
         if lead.strip():
             if current in values:
-                values[current].append(lead.strip())
+                # A fresh line after a labelled value only continues it when the value
+                # was cut off mid-list ("... and" / "(A or"). Otherwise it is a section
+                # heading or stray prose, and must not be counted as part of the value.
+                if not new_line or _is_unfinished(values[current]):
+                    values[current].append(lead.strip())
             else:
                 title_parts.append(lead.strip())
                 current = None
@@ -230,7 +244,7 @@ def parse_csv(text: str) -> ParseResult:
     columns: dict[str, str] = {}
     for header in reader.fieldnames or []:
         for field, aliases in _CSV_ALIASES.items():
-            if header.strip().lower() in aliases:
+            if _header_key(header) in {_header_key(alias) for alias in aliases}:
                 columns.setdefault(field, header)
     if "code" not in columns:
         raise EmptyDocumentError(
@@ -271,6 +285,14 @@ def parse_csv(text: str) -> ParseResult:
     if not result.courses:
         result.warnings.append("No course rows were found in this CSV.")
     return result
+
+
+def _header_key(header: str) -> str:
+    """Compare column names ignoring case, spaces, hyphens and "(s)".
+
+    "Pre-requisite(s)" and "prerequisites" give the same key.
+    """
+    return re.sub(r"[^a-z]", "", header.lower().replace("(s)", "s"))
 
 
 def _int_or_none(value: str) -> int | None:

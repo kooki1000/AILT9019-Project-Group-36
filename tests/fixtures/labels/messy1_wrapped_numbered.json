@@ -1,0 +1,10 @@
+{
+  "DASC1001": {"credits": 6, "assessments": 4, "prerequisites": []},
+  "DASC1002": {"credits": 6, "assessments": 5, "prerequisites": []},
+  "MATH1005": {"credits": 6, "assessments": 5, "prerequisites": []},
+  "DASC2001": {"credits": 6, "assessments": 4, "prerequisites": [["DASC1001"], ["DASC1002"], ["MATH1005"]]},
+  "DASC2002": {"credits": 6, "assessments": 4, "prerequisites": [["DASC1002", "COMP1117"]]},
+  "DASC3001": {"credits": 6, "assessments": 4, "prerequisites": [["DASC2001"], ["DASC2002", "COMP2113"]]},
+  "DASC3002": {"credits": 3, "assessments": 3, "prerequisites": []},
+  "DASC4001": {"credits": 12, "assessments": 3, "prerequisites": [["DASC3001"]]}
+}

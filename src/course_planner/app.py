@@ -23,13 +23,14 @@ from course_planner.editing import (
     remove_course,
     summarise,
 )
+from course_planner.export import plan_to_csv
 from course_planner.intake import read_document
 from course_planner.metrics import compare_to_baseline
 from course_planner.models import Course, ParseResult
 from course_planner.parser import parse_completed_courses
 from course_planner.planner import PlanConstraints, check_plan, generate_plan
 from course_planner.prerequisites import parse_prerequisites
-from course_planner.reviews import load_dataset
+from course_planner.reviews import load_dataset, review_rows
 from course_planner.storage import DocumentStore
 
 SAMPLE_PATH = Path(__file__).resolve().parents[2] / "data" / "samples" / "sample_requirements.txt"
@@ -154,6 +155,9 @@ def build_plan() -> None:
     ss.gen, ss.semesters, ss.electives = gen, [list(s) for s in gen.semesters], {}
     ss.review_count = len(review_data.reviews)
     ss.self_ratings = {}
+    ss.reviews_by_course = {}
+    for review in review_data.reviews:
+        ss.reviews_by_course.setdefault(review.course_code, []).append(review)
 
 
 def reset_plan() -> None:
@@ -341,6 +345,13 @@ def render_results(constraints: PlanConstraints) -> None:
         st.write("No courses are scheduled.")
 
     render_evenness()
+    render_reviews(catalog)
+    st.download_button(
+        "Download plan as CSV",
+        plan_to_csv(ss.semesters, catalog, ss.scores, list(ss.electives)),
+        file_name="course_plan.csv",
+        mime="text/csv",
+    )
     render_adjust(catalog, constraints)
 
 
@@ -374,6 +385,21 @@ def course_rows(codes: list[str], catalog: dict[str, Course]) -> list[dict[str, 
             }
         )
     return rows
+
+
+def render_reviews(catalog: dict[str, Course]) -> None:
+    reviews = ss.get("reviews_by_course", {})
+    planned = [code for sem in ss.semesters for code in sem if reviews.get(code)]
+    if not planned:
+        return
+    with st.expander("Student reviews behind each score"):
+        st.caption(
+            "Original wording is kept next to the English text so any number can be traced "
+            "back to its source. Only the numeric rating feeds the score."
+        )
+        for code in planned:
+            st.markdown(f"**{code} · {catalog[code].title}** ({len(reviews[code])} review(s))")
+            st.table(review_rows(reviews[code]))
 
 
 def render_evenness() -> None:

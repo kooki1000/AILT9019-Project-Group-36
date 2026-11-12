@@ -81,3 +81,22 @@ def test_rows_without_a_code_are_skipped(tmp_path):
         encoding="utf-8",
     )
     assert len(load_dataset(path).reviews) == 1
+
+
+def test_review_rows_keep_original_text_and_say_what_was_used():
+    from course_planner.models import Review
+    from course_planner.reviews import review_rows
+
+    rows = review_rows(
+        [
+            Review("A1", "Fair exams", 4, "Fair exams", "en", "not_needed"),
+            Review("A1", "功課很多", 2, "Lots of homework", "zh", "translated"),
+            Review("A1", "太難了", 1, None, "zh", "failed"),
+            Review("A1", "Fine", None, "Fine", "en", "not_needed"),
+        ]
+    )
+    assert rows[0]["English translation"] == "" and rows[0]["Used in score"].endswith("Yes")
+    assert rows[1]["Original text"] == "功課很多"
+    assert rows[1]["English translation"] == "Lots of homework"
+    assert "not translated" in rows[2]["Used in score"]
+    assert "no rating" in rows[3]["Used in score"] and rows[3]["Rating (1-5)"] == "—"

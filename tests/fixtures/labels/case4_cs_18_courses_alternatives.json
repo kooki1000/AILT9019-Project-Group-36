@@ -1,0 +1,20 @@
+{
+  "COMP1001": {"credits": 6, "assessments": 6, "prerequisites": []},
+  "COMP1002": {"credits": 6, "assessments": 4, "prerequisites": []},
+  "MATH1101": {"credits": 6, "assessments": 7, "prerequisites": []},
+  "MATH1102": {"credits": 6, "assessments": 5, "prerequisites": []},
+  "COMP2001": {"credits": 6, "assessments": 6, "prerequisites": [["COMP1001"]]},
+  "COMP2002": {"credits": 6, "assessments": 5, "prerequisites": [["COMP1001"]]},
+  "COMP2003": {"credits": 6, "assessments": 6, "prerequisites": [["COMP2001"], ["COMP1002"]]},
+  "COMP2004": {"credits": 3, "assessments": 2, "prerequisites": [["COMP1001"]]},
+  "COMP2005": {"credits": 6, "assessments": 5, "prerequisites": [["COMP2001", "COMP2004"]]},
+  "COMP3001": {"credits": 6, "assessments": 6, "prerequisites": [["COMP2002"], ["COMP2001"]]},
+  "COMP3002": {"credits": 6, "assessments": 4, "prerequisites": [["COMP2002", "COMP3001"]]},
+  "COMP3003": {"credits": 6, "assessments": 5, "prerequisites": [["COMP2003"], ["MATH1102", "STAT1101"]]},
+  "STAT1101": {"credits": 6, "assessments": 5, "prerequisites": [["MATH1101"]]},
+  "COMP3004": {"credits": 6, "assessments": 4, "prerequisites": [["COMP2004"], ["COMP2005"]]},
+  "COMP3005": {"credits": 6, "assessments": 5, "prerequisites": [["COMP2003"]]},
+  "COMP3006": {"credits": 6, "assessments": 4, "prerequisites": [["COMP2003"], ["MATH1102"]]},
+  "COMP4001": {"credits": 6, "assessments": 5, "prerequisites": [["COMP3001"], ["COMP3002"]]},
+  "COMP4002": {"credits": 6, "assessments": 3, "prerequisites": [["COMP3004"]]}
+}
