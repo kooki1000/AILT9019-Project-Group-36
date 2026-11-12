@@ -53,3 +53,24 @@ def test_unwritable_store_only_warns(tmp_path):
     result, notices = read_document(GOOD, "plan.txt", store)
     assert result is not None
     assert notices == [("warning", "The result could not be saved on this computer.")]
+
+
+def test_saved_result_for_another_degree_is_not_shown_as_the_requested_one(tmp_path):
+    # Regression: a failed read fell back to the saved result even when it was for a
+    # different degree of the same file than the one the student asked for.
+    store = DocumentStore(tmp_path / "db.sqlite3")
+    saved = ParseResult(
+        [Course("ENGG1000", "Fundamentals", 6)],
+        programmes=["COMPUTER ENGINEERING", "ELECTRICAL ENGINEERING"],
+        programme="COMPUTER ENGINEERING",
+    )
+    store.save("plan.pdf", b"not a pdf", saved)
+
+    other, notices = read_document(b"not a pdf", "plan.pdf", store, "ELECTRICAL ENGINEERING")
+    assert other is None and notices[0][0] == "error"
+
+    same, notices = read_document(b"not a pdf", "plan.pdf", store, "computer engineering")
+    assert same is not None and notices[0][0] == "warning"
+
+    default, _ = read_document(b"not a pdf", "plan.pdf", store)
+    assert default is not None

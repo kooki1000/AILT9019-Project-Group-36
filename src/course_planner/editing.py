@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from course_planner.metrics import DEFAULT_DIFFICULTY
 from course_planner.models import Course
 from course_planner.planner import Issue, PlanConstraints, course_credits
 
@@ -107,7 +108,7 @@ def summarise(
                 index=i,
                 credits=sum(course_credits(c, constraints) for c in known),
                 course_count=len(sem),
-                difficulty=round(sum(difficulty.get(c, 0.0) for c in sem), 2),
+                difficulty=round(sum(difficulty.get(c, DEFAULT_DIFFICULTY) for c in sem), 2),
                 problems=tuple(issue for issue in issues if issue.semester == i),
             )
         )

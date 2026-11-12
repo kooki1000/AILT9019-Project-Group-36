@@ -8,7 +8,7 @@ Dataset columns: ``course_code``, ``text``, ``rating`` and an optional
 ``translation`` for reviews that are not already in English. ``rating`` uses
 the dataset's own scale, mapped to a -1..1 sentiment by
 ``rating_to_sentiment``. Reviews the app cannot use (Chinese reviews without a
-translation, reviews without a rating) are counted in ``ReviewDataset.excluded``
+translation, reviews without a rating on the 1-5 scale) are counted in ``ReviewDataset.excluded``
 so the app can say so rather than silently dropping them.
 """
 
@@ -42,12 +42,22 @@ class ReviewDataset:
     ``sentiments`` maps course code to one value in [-1, 1] per usable review
     (-1 = very negative, +1 = very positive). ``excluded`` counts reviews left
     out of the score: Chinese reviews without a translation and reviews without
-    a rating. The app is expected to tell the student about these.
+    a usable 1-5 rating. The app is expected to tell the student about these.
     """
 
     reviews: list[Review] = field(default_factory=list)
     sentiments: dict[str, list[float]] = field(default_factory=dict)
     excluded: int = 0
+
+
+def is_usable_rating(rating: float | None) -> bool:
+    """A rating counts only if it is on the dataset's 1-5 scale.
+
+    A rating of 0, or 7 on a 1-10 scale, is a different scale or a missing value. Clamping it
+    would silently turn it into the hardest or easiest review, so it is left out and counted
+    in ``ReviewDataset.excluded`` instead.
+    """
+    return rating is not None and RATING_MIN <= rating <= RATING_MAX
 
 
 def rating_to_sentiment(rating: float) -> float:
@@ -100,7 +110,7 @@ def load_dataset(path: Path | str | None = None) -> ReviewDataset:
     for review in reviews:
         # The app never translates anything itself (README): Chinese reviews
         # without a prepared translation are left out of the score.
-        if review.translation_status == "failed" or review.rating is None:
+        if review.translation_status == "failed" or not is_usable_rating(review.rating):
             excluded += 1
             continue
         sentiments.setdefault(review.course_code, []).append(rating_to_sentiment(review.rating))
@@ -115,11 +125,13 @@ def review_rows(reviews: list[Review]) -> list[dict[str, str]]:
     """
     rows = []
     for review in reviews:
-        used = review.translation_status != "failed" and review.rating is not None
+        used = review.translation_status != "failed" and is_usable_rating(review.rating)
         if review.translation_status == "failed":
             reason = "No — not translated"
         elif review.rating is None:
             reason = "No — no rating"
+        elif not is_usable_rating(review.rating):
+            reason = "No — rating outside 1-5"
         else:
             reason = "Yes"
         english = review.english_text if review.english_text != review.text else ""

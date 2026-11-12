@@ -72,3 +72,19 @@ def test_report_and_cli(capsys):
     output = capsys.readouterr().out
     assert "PASS" in output and "case5_arts_24_courses_deep_chain" in output
     assert main([]) == 2
+
+
+def test_directory_evaluation_plans_required_courses_only(tmp_path):
+    # Regression: electives and "choose one" options were planned as if they were required,
+    # so a syllabus with a long elective list could never pass the load checks.
+    (tmp_path / "doc.txt").write_text(
+        "Foundation Courses (12 credits)\n"
+        "Course Code Course No. of credits\n"
+        "COMP1117 Computer programming 6\n"
+        "COMP2113 Programming technologies 6\n"
+        "Disciplinary Elective Courses (30 credits, to be chosen from the following list)\n"
+        "Course Code Course No. of credits\n"
+        + "".join(f"COMP3{n:03d} Elective {n} 6\n" for n in range(1, 11))
+    )
+    suite = evaluate_directory(tmp_path)
+    assert suite.cases[0].semesters == 1 and suite.cases[0].checks_passed
