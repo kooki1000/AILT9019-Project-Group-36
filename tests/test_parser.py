@@ -106,8 +106,8 @@ def test_wrapped_prerequisite_line_is_not_a_new_course():
 
 def test_missing_credits_and_duplicates_are_reported():
     result = parse_text(
-        "COMP1117 Computer Programming\n"
-        "COMP1117 Computer Programming again (6 credits)\n"
+        "COMP1117 | Computer Programming\n"
+        "COMP1117 | Computer Programming again | 6 credits\n"
     )
     assert len(result.courses) == 1
     assert any("credits were not found" in w for w in result.warnings)

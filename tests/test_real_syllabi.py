@@ -32,8 +32,9 @@ def test_real_syllabus_is_read_sensibly(pdf):
     assert len({c.code for c in courses}) == len(courses)
     assert not any(c.code.startswith("XXXX") for c in courses)
     assert max(len(c.title) for c in courses) <= 120, "a paragraph was read as a title"
-    with_credits = sum(c.credits is not None for c in courses)
-    # Some faculties omit credits for whole lists (e.g. Chinese as a Foreign Language).
-    assert with_credits / len(courses) >= 0.8, "too many courses without credits"
+    # Some faculties omit credits for whole lists (e.g. BALLB's electives). That is fine as long
+    # as it is never silent: every course without credits has a warning.
+    warned = {w.split(":")[0] for w in result.warnings if "credits were not found" in w}
+    assert {c.code for c in courses if c.credits is None} <= warned
     required = [c for c in courses if not c.elective]
     assert required, "every course was classed as an elective"

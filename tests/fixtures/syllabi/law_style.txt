@@ -1,0 +1,34 @@
+SYLLABUSES FOR THE DEGREE OF BACHELOR OF LAWS (constructed test document, fictional)
+1. A candidate shall complete 120 credits of professional core including compulsory
+courses and 42 credits of disciplinary electives. Subject to LL11, candidates
+shall select 57 credits of courses in their First Year, 63 credits in their
+Second Year and 60 credits in each of their Third and Fourth Years.
+First Year (57 credits)
+LLAW1001 Law of contract I (6 credits)
+LLAW1002 Law of contract II (6 credits)
+AILT1001 Artificial intelligence literacy I (3 credits)
+CAES1001 Academic communication in English2 (non-credit bearing)
+CCXXxxxx Common Core course3 (18 credits)
+Second Year (63 credits)
+LLAW1005 Law of tort I (6 credits)
+4 Candidates shall take any 3-credit AILT courses offered by other Faculties that are open to
+all undergraduate students.
+LLAWxxxx Disciplinary electives5 (42 credits)
+Capstone course (Choose one of the following courses)8:
+LLAW3148 Clinical legal education
+LLAW3187 Mooting and dispute resolution9
+Designated disciplinary elective (choose one of the following courses):
+LLAW3205 Advanced legal theory
+LLAW3016 Comparative law
+2. The disciplinary electives are listed as follows10:
+LLAW3015 Advanced company law
+Choose at least one of the following courses to fulfil the requirement (6 credits):
+LLAW3230 Public interest clinic
+SECOND YEAR (63 credits)
+Compulsory courses (in the order listed in the syllabus)
+LLAW1001 Law of contract I (6 credits)
+Offered in the first semester.
+Assessment: 40% coursework, 60% examination.
+LLAW3205 Advanced legal theory (6 credits)
+Prerequisite: LLAW2001
+Assessment: 100% coursework.

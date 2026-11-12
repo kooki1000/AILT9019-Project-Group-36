@@ -1,0 +1,13 @@
+{
+  "LLAW1001": {"credits": 6, "assessments": 2, "prerequisites": []},
+  "LLAW1002": {"credits": 6, "prerequisites": []},
+  "AILT1001": {"credits": 3, "prerequisites": []},
+  "CAES1001": {"prerequisites": []},
+  "LLAW1005": {"credits": 6, "prerequisites": []},
+  "LLAW3148": {"credits": 6, "prerequisites": []},
+  "LLAW3187": {"credits": 6, "prerequisites": []},
+  "LLAW3205": {"credits": 6, "assessments": 1, "prerequisites": [["LLAW2001"]]},
+  "LLAW3016": {"prerequisites": []},
+  "LLAW3015": {"prerequisites": []},
+  "LLAW3230": {"credits": 6, "prerequisites": []}
+}
