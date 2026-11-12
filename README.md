@@ -161,6 +161,12 @@ review dataset. In the supplied archive, 232 non-UI tests passed on 26 October
 2026. The full Streamlit UI suite should also be run in the project environment
 before submission.
 
+## Parser as an agent skill
+
+`skills/parse-requirements/SKILL.md` packages the document parser for other agent
+environments. It calls `python -m course_planner.parse_cli <file>`, which prints
+the courses, prerequisites and warnings as JSON.
+
 ## Known limitations
 
 - The proposed 95% parsing target has not been measured on a labelled corpus.
