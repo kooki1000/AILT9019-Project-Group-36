@@ -77,8 +77,11 @@ The parser reads three layouts, which can be mixed in one document: labelled blo
 (`COMP1117 Programming (6 credits)` then `Prerequisite:` / `Assessment:`), table rows
 (`COMP1117 Computer programming 6`, optionally with a year-of-study column) and course
 descriptions (`COMP1117. Computer programming (6 credits)` followed by prose and
-`Prerequisite:` / `Assessment:` lines). It was checked on the real 2025-26 BEcon, BEng(CompSc)
-and BA syllabuses, which differ a lot: see "Known limitations" for what still needs care.
+`Prerequisite:` / `Assessment:` lines), and plain course lists (`CODE. Title (6 credits)` under
+headings such as "Core courses" or "Disciplinary Electives", with or without descriptions later).
+It was checked on the real 2025-26/2026-27 BEcon, BEng(CompSc), BA, BJ, BJ(MAI) and BSocSc
+syllabuses, which differ a lot: see "Known limitations" for what still needs care. A regulations
+document (rules but no course list) is recognised and the app says to upload the syllabus.
 
 - **Required vs choice.** Elective lists, "choose one of" pairs, "Focus" lists and courses that
   appear only in a catalogue are tagged as electives. The app plans the required courses and
