@@ -71,6 +71,29 @@ Under **Adjust your plan** you can also give a course your own 1-10 difficulty
 rating. It replaces the estimate for that course (marked "Your own rating") and
 the plan's totals and evenness are recalculated; you can remove it again.
 
+### Faculty syllabuses
+
+The parser reads three layouts, which can be mixed in one document: labelled blocks
+(`COMP1117 Programming (6 credits)` then `Prerequisite:` / `Assessment:`), table rows
+(`COMP1117 Computer programming 6`, optionally with a year-of-study column) and course
+descriptions (`COMP1117. Computer programming (6 credits)` followed by prose and
+`Prerequisite:` / `Assessment:` lines). It was checked on the real 2025-26 BEcon, BEng(CompSc)
+and BA syllabuses, which differ a lot: see "Known limitations" for what still needs care.
+
+- **Required vs choice.** Elective lists, "choose one of" pairs, "Focus" lists and courses that
+  appear only in a catalogue are tagged as electives. The app plans the required courses and
+  says how many it left out; add an elective by its code (its details are filled in from the
+  document) or list the courses you want under **Only plan these courses**.
+- **Several programmes in one file.** Tables after a `MAJOR IN ...` / `MINOR IN ...` heading are
+  ignored. A document with more than 60 courses and no list from you (for example the BA
+  catalogue) is not planned; the app asks for your course list instead.
+- **Prerequisites that are not course codes** ("At least one 2000-level course", "special
+  approval") are reported as warnings instead of silently dropped. `Mutually exclusive with`,
+  `Non-permissible combination` and placeholder codes such as `XXXX2002` are never prerequisites.
+- Assessment percentages (`50% coursework, 50% examination`) are counted as two components.
+
+To check your own PDFs: `COURSE_PLANNER_REAL_SYLLABI=<folder> python -m pytest tests/test_real_syllabi.py`.
+
 ## Reproducible sample
 
 With the bundled requirement document, bundled demonstration review CSV and
@@ -221,6 +244,11 @@ python skills/build_skill.py        # writes dist/parse-requirements.zip
 
 ## Known limitations
 
+- Real syllabuses mostly do not list prerequisites (BEcon lists none; BEng lists them only in
+  course descriptions) and BEcon's year-of-study column is not used by the planner, so a plan
+  can place a final-year course early. Treat the order as a starting point.
+- Table layouts that pdf text extraction scrambles (for example BEcon's stacked "A or B" rows)
+  can leave a course without credits; the app warns when that happens.
 - The 95% parsing target is met only on constructed documents written by the team.
   The proposal's two real public requirement documents (identifying details
   removed) have not been added, so real-world parsing accuracy is still unmeasured.
