@@ -41,7 +41,7 @@ _TRAILING_JUNK = " \t-–—:|,;"
 # may follow a course code.
 _MARK = r"[*#^†‡]*"
 _DESC_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\.\s+(\S.*)$")
-_PAREN_CREDITS_RE = re.compile(r"\(\s*(\d+)\s*credits?\s*\)", re.IGNORECASE)
+_PAREN_CREDITS_RE = re.compile(r"\(\s*(\d+)\s*credits?\s*(?:\)|$)", re.IGNORECASE)
 _PROGRAMME_RE = re.compile(r"^(?:(?:MAJOR|MINOR) IN\b|SYLLABUSES? FOR THE DEGREE OF\b)")
 _YEARS = r"[1-6](?:\s*(?:or|,|/)\s*[1-6])*"
 _ROW_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\s+(.+?)\s+(\d{{1,2}})$")
@@ -55,8 +55,10 @@ _FIELD_RE = re.compile(
     r"^(pre-?requisites?|assessments?|mutually exclusive with|co-?requisites?)\s*:\s*(.*)$",
     re.IGNORECASE,
 )
+_INLINE_FIELD_RE = re.compile(r"\b(pre-?requisites?|assessments?)\s*:\s*(.*)$", re.IGNORECASE)
 _ELECTIVE_HEAD_RE = re.compile(
-    r"elective|to be chosen|chosen from|choose (?:any|\d+|from)|select (?:any|\d+|from)",
+    r"elective|to be chosen|chosen from|choose (?:any|\d+|from)|select (?:any|\d+|from)|"
+    r"take (?:one|any|\d+)|in lieu",
     re.IGNORECASE,
 )
 _REQUIRED_HEAD_RE = re.compile(
@@ -68,6 +70,7 @@ _NOISE_RE = re.compile(r"^(?:\d{1,3}|[_\-=]{5,})$")
 _STUCK_DIGIT_RE = re.compile(r"(?<=[a-z])\d$")
 _CONDITION_RE = re.compile(r"consent|permission|approval|standing|at least", re.IGNORECASE)
 MAX_TITLE_LINES = 2
+MAX_BARE_CREDITS = 12  # "CODE. Title 3": a bare number this small is the credits
 
 
 class UnsupportedFileError(ValueError):
@@ -183,6 +186,10 @@ class _Description:
     values: dict[str, list[str]]
     field: str | None = None
     weak_credits: bool = False
+    seen_field: bool = False  # Prerequisite:/Assessment: followed: a description, not a list item
+    body: list[str] | None = None  # prose lines after the header (checked for headings later)
+    choice: bool = False  # the entry above ended in "or": this is one of several alternatives
+    ends_or: bool = False  # this entry itself ends in "or" / "; OR"
 
 
 class _Reader:
@@ -213,11 +220,15 @@ class _Reader:
         self.carry: int | None = None  # credits for the next bare "CODE title" row
         self.alt_open = False
         self.rows_closed = False  # a later major/minor section: its tables are not ours
+        self.after_or = False  # the previous list entry ended in "or"
+        self.regulations = False  # the document opens as "REGULATIONS FOR ..."
 
     # ------------------------------------------------------------------ input
 
     def feed(self, line: str) -> None:
         self.line_no += 1
+        if self.line_no <= 3 and line.upper().startswith("REGULATIONS FOR"):
+            self.regulations = True
         desc = self.desc
         if desc is not None and desc.field in ("prereq", "assess") and _is_unfinished(
             desc.values[desc.field]
@@ -298,6 +309,7 @@ class _Reader:
             at, flag = self.heading
             self.elective = bool(flag) and self.line_no - at <= 2
             self.open_cluster, self.carry, self.alt_open = [], None, False
+            self.after_or = False
             return
         numbers = _YEAR_CREDITS_RE.match(line) if self.table_mode else None
         if numbers:
@@ -309,7 +321,8 @@ class _Reader:
                 self.carry, self.alt_open = credits, True
             self.open_cluster = []
             return
-        if self.desc is not None and self._description_line(line):
+        desc = self.desc
+        if desc is not None and self._description_line(line):
             return
         if self.legacy is not None:
             self.legacy.append(line)
@@ -323,20 +336,33 @@ class _Reader:
 
     def _start_description(self, code: str, rest: str) -> None:
         self._close()
+        raw_rest = rest
         credits: int | None = None
         found = _PAREN_CREDITS_RE.search(rest)
         if found:
             credits, rest = int(found.group(1)), rest[: found.start()]  # drop any note after it
+        alternative = any(
+            re.search(r"(?:\bor|;)\s*$", text, re.IGNORECASE) for text in (raw_rest, rest)
+        )
+        weak = False
+        trailing = None if found else re.search(r"\s+(\d{1,2})\s*$", rest)
+        if trailing and int(trailing.group(1)) <= MAX_BARE_CREDITS:
+            credits, weak, found = int(trailing.group(1)), True, True
+            rest = rest[: trailing.start()]
         self.desc = _Description(
             code, [rest.strip()], credits, 0 if found else MAX_TITLE_LINES,
-            {"prereq": [], "assess": []},
+            {"prereq": [], "assess": []}, choice=self.after_or, ends_or=alternative,
+            weak_credits=weak,
         )
 
     def _description_line(self, line: str) -> bool:
         desc = self.desc
         assert desc is not None
         field = _FIELD_RE.match(line)
+        if field is None and desc.field is None:
+            field = _INLINE_FIELD_RE.search(line)  # "... in Hong Kong. Assessment: 60% ..."
         if field:
+            desc.seen_field = True
             name = field.group(1).lower()
             desc.field = "prereq" if name.startswith("pre") else (
                 "assess" if name.startswith("assess") else "ignore"
@@ -354,8 +380,10 @@ class _Reader:
             # Join first: the "(6 credits)" note itself can wrap ("... (6" / "credits)").
             joined = " ".join([*desc.title_parts, line])
             found = _PAREN_CREDITS_RE.search(joined)
+            wrapped = bool(re.search(r"\(\s*\d*\s*$", desc.title_parts[-1]))
+            if found and not wrapped and _heading_flag(line) is not None:
+                found = None  # "Core courses (12 credits)" is a heading, not this title's tail
             if found:
-                wrapped = bool(re.search(r"\(\s*\d*\s*$", desc.title_parts[-1]))
                 desc.title_parts = [joined[: found.start()].strip()]
                 desc.credits = int(found.group(1))
                 desc.weak_credits = not wrapped
@@ -365,12 +393,16 @@ class _Reader:
                 desc.title_lines_left -= 1
             else:
                 desc.title_lines_left = 0  # the title was complete; this is the description
+                desc.body = [*(desc.body or []), line]
             return True
         if desc.field in ("prereq", "assess") and (
             _is_unfinished(desc.values[desc.field]) or _CONNECTOR_START_RE.match(line)
         ):
             desc.values[desc.field].append(line)
             return True
+        if desc.body is None:
+            desc.body = []
+        desc.body.append(line)
         return True  # prose between the header and the fields
 
     # ---------------------------------------------------------------- output
@@ -410,7 +442,23 @@ class _Reader:
                 parse_prerequisites(prereq_text),
                 count_assessments(assess_text) if assess_text else None,
             )
-            self.entries.append(_Entry("desc", course, prereq_text, weak_credits=desc.weak_credits))
+            body = desc.body or []
+            tail = [desc.title_parts[-1], *body[:1]]
+            wrapped_or = any(re.search(r"\bor\s*$", t, re.IGNORECASE) for t in tail)
+            ends_or = not desc.seen_field and (desc.ends_or or wrapped_or)
+            self.after_or = ends_or
+            choice = desc.choice or ends_or
+            votes = () if desc.seen_field else (self.elective or choice,)
+            if not desc.seen_field:
+                # A list item. Headings written between list items are read as body text of
+                # the item above; they classify the entries that follow.
+                for line in desc.body or []:
+                    flag = _heading_flag(line)
+                    if flag is not None:
+                        self.heading, self.elective = (self.line_no, flag), flag
+            self.entries.append(
+                _Entry("desc", course, prereq_text, votes, weak_credits=desc.weak_credits)
+            )
 
     def finish(self) -> ParseResult:
         self._close()
@@ -426,7 +474,7 @@ class _Reader:
                 )
             else:
                 merged[code] = _merge(merged[code], entry)
-        has_tables = any(e.kind == "row" for e in self.entries)
+        has_tables = any(e.votes for e in self.entries if e.kind != "legacy")
         for entry in merged.values():
             # Elective only if every list that names the course says so. A course that is only
             # described (or mentioned) in a document with requirement tables is not required.
@@ -446,6 +494,11 @@ class _Reader:
                 )
         if not result.courses:
             result.warnings.append("No course codes (like COMP1117) were found in this document.")
+            if self.regulations:
+                result.warnings.append(
+                    "This looks like a regulations document, which does not list courses. "
+                    "Upload the matching syllabus ('Syllabuses for the degree of ...')."
+                )
         return result
 
 
@@ -484,7 +537,8 @@ def _may_continue(title: str) -> bool:
 
 def _clean_title(title: str) -> str:
     title = re.sub(r"\s+(?:or|and)$", "", title.strip())
-    title = title.strip(" \t*#^†‡")
+    title = re.split(r"\s*[*#^†‡]", title.strip())[0]  # a footnote marker ends the title
+    title = title.strip(" \t–—-:")
     return _STUCK_DIGIT_RE.sub("", title).strip()
 
 
