@@ -1,0 +1,8 @@
+{
+  "STAT1001": {"credits": 6, "assessments": 3, "prerequisites": []},
+  "STAT1002": {"credits": 3, "assessments": 3, "prerequisites": []},
+  "STAT2001": {"credits": 6, "assessments": 5, "prerequisites": [["STAT1001"]]},
+  "STAT2002": {"credits": 3, "assessments": 2, "prerequisites": [["STAT1001"]]},
+  "STAT3001": {"credits": 6, "assessments": 4, "prerequisites": [["STAT2001"], ["STAT1002"]]},
+  "STAT3002": {"credits": 3, "assessments": 2, "prerequisites": [["STAT2002"]]}
+}

@@ -192,3 +192,16 @@ def test_saved_documents_can_be_deleted_from_the_app(built):
     built = click(built, "Delete all saved documents")
     assert "Saved documents: 0" in text(built)
     assert "Deleted 1 saved document(s)" in text(built)
+
+
+def test_reviews_behind_scores_are_shown_with_original_text(app, monkeypatch):
+    monkeypatch.setenv("COURSE_PLANNER_REVIEWS", str(REVIEWS_SAMPLE))
+    at = click(app, "Build my plan")
+    assert not at.exception
+    assert [e.label for e in at.expander] == ["Student reviews behind each score"]
+    shown = [t.value for t in at.table if "Original text" in t.value.columns]
+    assert shown and "Good intro course" in shown[0]["Original text"].iloc[0]
+
+
+def test_no_review_panel_without_reviews(built):
+    assert not built.expander

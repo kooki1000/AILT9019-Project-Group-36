@@ -107,6 +107,33 @@ def load_dataset(path: Path | str | None = None) -> ReviewDataset:
     return ReviewDataset(reviews, sentiments, excluded)
 
 
+def review_rows(reviews: list[Review]) -> list[dict[str, str]]:
+    """Table rows for showing the reviews behind a score, original text first.
+
+    Every review is listed, including ones left out of the score, so a number
+    can always be traced back to its source (proposal, section 5).
+    """
+    rows = []
+    for review in reviews:
+        used = review.translation_status != "failed" and review.rating is not None
+        if review.translation_status == "failed":
+            reason = "No — not translated"
+        elif review.rating is None:
+            reason = "No — no rating"
+        else:
+            reason = "Yes"
+        english = review.english_text if review.english_text != review.text else ""
+        rows.append(
+            {
+                "Rating (1-5)": f"{review.rating:g}" if review.rating is not None else "—",
+                "Original text": review.text,
+                "English translation": english or "",
+                "Used in score": ("✅ " if used else "⚠️ ") + reason,
+            }
+        )
+    return rows
+
+
 def _rating_or_none(value: str | None) -> float | None:
     match = re.search(r"\d+(?:\.\d+)?", value or "")
     return float(match.group()) if match else None

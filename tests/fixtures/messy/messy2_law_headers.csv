@@ -1,0 +1,11 @@
+Course Code,Course Title,Units,Pre-requisites,Assessment
+ENGL1001,Academic English,3,,2 essays; 1 presentation
+ENGL1002,Academic Writing,3,ENGL1001,3 essays
+LAWS1001,Introduction to Law,6,None,1 essay; 1 final exam
+LAWS1002,Legal Method,6,LAWS1001,2 assignments; 1 final exam
+LAWS2001,Contract Law,6,LAWS1001 and LAWS1002,2 assignments; 1 midterm; 1 final exam
+LAWS2002,Criminal Law,6,LAWS1001,"1 essay, 1 final exam"
+LAWS2003,Tort Law,6,LAWS2001 or LAWS2002,1 essay; 1 final exam
+LAWS3001,Property Law,6,"LAWS2001, LAWS2003",1 research paper; 1 final exam
+LAWS3002,Legal Ethics,3,LAWS2002 & ENGL1002,1 essay; 1 presentation
+LAWS4001,Moot Court,6,LAWS3001,1 oral argument; 1 written submission

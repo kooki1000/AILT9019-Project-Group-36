@@ -167,3 +167,53 @@ def test_parse_completed_courses_tolerates_spacing_and_case():
     assert parse_completed_courses("comp 1117, MATH1013\nCOMP2113") == {
         "COMP1117", "MATH1013", "COMP2113",
     }
+
+
+def test_pipe_separated_line_is_read_once():
+    # Regression: the fields of a one-line course used to be processed twice, which
+    # doubled the assessment count and invented an extra prerequisite group.
+    course = parse_text(
+        "STAT3001 | Applied Modelling | 6 credits | Prerequisite: STAT2001 and STAT1002 | "
+        "Assessment: 2 assignments, 1 project, 1 final exam\n"
+    ).courses[0]
+    assert course.assessments == 4
+    assert course.prerequisites == (("STAT2001",), ("STAT1002",))
+
+
+def test_section_heading_is_not_counted_as_an_assessment():
+    # Regression: "Core courses and electives" was split on "and" and counted as an extra item.
+    result = parse_text(
+        "MATH1005 Calculus (6 credits)\n"
+        "  Prerequisite: None\n"
+        "  Assessment: 3 quizzes, 1 midterm, 1 final exam\n"
+        "\n"
+        "B. Core courses and electives\n"
+        "DASC2001 Statistical Learning (6 credits)\n"
+        "  Prerequisite: MATH1005\n"
+        "\n"
+        "C. Advanced courses and projects\n"
+        "DASC3001 Machine Learning (6 credits)\n"
+    )
+    assert result.by_code()["MATH1005"].assessments == 5
+    assert result.by_code()["DASC2001"].prerequisites == (("MATH1005",),)
+
+
+def test_wrapped_assessment_and_bracketed_prerequisite_still_continue():
+    course = parse_text(
+        "COMP2119 Data Structures (6 credits)\n"
+        "Prerequisite: COMP1117 and (MATH1013\n"
+        "or MATH1853)\n"
+        "Assessment: 3 assignments, 1 midterm and\n"
+        "1 final exam\n"
+    ).courses[0]
+    assert course.prerequisites == (("COMP1117",), ("MATH1013", "MATH1853"))
+    assert course.assessments == 5
+
+
+@pytest.mark.parametrize(
+    "header", ["Pre-requisites", "Prerequisite(s)", "PRE-REQ", "Pre requisites"]
+)
+def test_csv_prerequisite_column_name_variants(header):
+    result = parse_csv(f"Course Code,Units,{header}\nCOMP2113,6,COMP1117\n")
+    assert result.courses[0].credits == 6
+    assert result.courses[0].prerequisites == (("COMP1117",),)
