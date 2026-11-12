@@ -221,7 +221,8 @@ python -m course_planner.evaluation tests/fixtures/requirements
 For the five bundled constructed fixtures, the current result is 5/5 legality
 checks, 4/5 plans more even than document-order baseline, and overall `PASS`.
 This evaluation uses document-only difficulty scores; it does not validate the
-review dataset. All 267 tests (including the Streamlit UI tests) pass.
+review dataset. The whole test suite, including the Streamlit UI tests, passes
+(`python -m pytest -q`).
 
 ### Parsing acceptance check
 
@@ -244,6 +245,14 @@ python -m course_planner.parsing_eval tests/fixtures/labels \
   harder constructed layouts: numbered/wrapped text and a CSV with different
   column names): 100% on all four measures, `PASS`. The test suite also runs the
   text documents through the PDF path.
+
+The syllabus layouts have their own labelled fixtures (fictional documents that follow
+the structure of real HKU syllabuses: table rows, descriptions, course lists, law-style
+lists and a file with two degrees); the same check runs on them:
+
+```bash
+python -m course_planner.parsing_eval tests/fixtures/labels_syllabi tests/fixtures/syllabi
+```
 
 Writing the harder documents found and fixed three real parser bugs: pipe-separated
 one-line courses were read twice (inflating assessment counts and inventing extra
