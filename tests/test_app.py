@@ -312,3 +312,15 @@ def test_long_warning_lists_are_collapsed(app):
     many = "\n".join(f"ARTS{n:04d} Course {n}" for n in range(1000, 1012))  # no credits anywhere
     at = click(paste(app, many), "Build my plan")
     assert [e.label for e in at.expander] == ["7 more note(s) about this document"]
+
+
+def test_student_can_pick_which_degree_in_a_multi_degree_file(app):
+    paste(app, (SYLLABI / "multi_programme.txt").read_text())
+    at = click(app, "Build my plan")
+    assert "describes 2 programmes" in text(at) and "Planning 'COMPUTER ENGINEERING'" in text(at)
+    assert planned(at) == {"ENGG1000", "COMP2113", "ELEC2441", "COMP3230"}
+
+    at.selectbox(key="programme").set_value("ELECTRICAL ENGINEERING")
+    at = click(at, "Build my plan")
+    assert planned(at) == {"ENGG1000", "ELEC2147", "ELEC3141"}
+    assert "Planning 'ELECTRICAL ENGINEERING'" in text(at)

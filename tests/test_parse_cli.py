@@ -27,3 +27,11 @@ def test_errors_are_json_with_exit_code_1(capsys, tmp_path):
 
 def test_usage_error(capsys):
     assert main([]) == 2
+
+
+def test_programme_option_picks_one_degree(capsys):
+    multi = Path(__file__).parent / "fixtures" / "syllabi" / "multi_programme.txt"
+    assert main([str(multi), "--programme", "ELECTRICAL ENGINEERING"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["programme"] == "ELECTRICAL ENGINEERING" and len(data["programmes"]) == 2
+    assert "ELEC2147" in {c["code"] for c in data["courses"] if not c["elective"]}

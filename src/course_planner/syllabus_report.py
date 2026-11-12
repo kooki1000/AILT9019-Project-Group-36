@@ -36,10 +36,10 @@ class Report:
         return self.result is not None and bool(self.result.courses) and not self.suspicious
 
 
-def inspect_document(path: Path) -> Report:
+def inspect_document(path: Path, programme: str | None = None) -> Report:
     report = Report(path.name)
     try:
-        report.result = parse_document(path)
+        report.result = parse_document(path, programme=programme)
     except (ValueError, EmptyDocumentError, OSError) as exc:
         report.error = str(exc)
         return report
@@ -91,6 +91,11 @@ def format_report(report: Report, show_all: bool = False) -> str:
         f"with prerequisites: {sum(bool(c.prerequisites) for c in courses)}, "
         f"with assessments: {sum(c.assessments is not None for c in courses)}"
     )
+    if report.result.programmes:
+        lines.append(
+            f"  programmes in this file: {'; '.join(report.result.programmes)} "
+            f"(read: {report.result.programme}; use --programme NAME for another)"
+        )
     lines.append(f"  parser warnings: {len(report.result.warnings)}")
     lines.extend(f"    - {w}" for w in report.result.warnings[:SHOWN])
     if len(report.result.warnings) > SHOWN:
@@ -131,11 +136,19 @@ def collect(paths: Iterable[Path]) -> list[Path]:
 def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     show_all = "--all" in args
+    programme = None
+    if "--programme" in args:
+        at = args.index("--programme")
+        programme = args[at + 1] if at + 1 < len(args) else None
+        del args[at : at + 2]
     paths = [Path(a).expanduser() for a in args if a != "--all"]
     if not paths:
-        print("usage: python -m course_planner.syllabus_report <file or folder> ... [--all]")
+        print(
+            "usage: python -m course_planner.syllabus_report <file or folder> ... "
+            "[--all] [--programme NAME]"
+        )
         return 2
-    reports = [inspect_document(p) for p in collect(paths)]
+    reports = [inspect_document(p, programme) for p in collect(paths)]
     for report in reports:
         print(format_report(report, show_all))
     return 0 if reports and all(r.looks_ok or r.result is not None for r in reports) else 1

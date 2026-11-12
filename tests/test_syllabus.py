@@ -24,7 +24,7 @@ def codes(result, elective: bool) -> list[str]:
 
 def test_syllabus_layouts_meet_the_acceptance_bar():
     report = evaluate_folders(LABELS, [SYLLABI])
-    assert len(report.documents) == 5
+    assert len(report.documents) == 6
     assert report.passed, report.report()
     for doc in report.documents:  # exact: nothing missing, nothing invented from prose
         assert not doc.missing_courses and not doc.extra_courses, doc.name
@@ -105,6 +105,16 @@ def test_catalogue_without_tables_leaves_courses_unclassified():
         ("COMP1117 Mutually exclusive with: ENGG1330", (("COMP1117",),)),
         ("XXXX2002 course or HIST1001", (("HIST1001",),)),
         ("Nil.", ()),
+        # an exam level is an alternative route, so the group cannot be enforced
+        ("Level 2 in Module 1, or Module 2 of HKDSE Mathematics, or Pass in MATH1011.", ()),
+        ("COMP1117 or Level 3 in HKDSE Mathematics", ()),
+        # taking courses together is not a prerequisite
+        ("MATH1011, or take MATH1011 and MATH1853 concurrently.", (("MATH1011",),)),
+        # ", or" extends the list of alternatives instead of starting a new requirement
+        ("COMP2113, or COMP2123, or ENGG1340", (("COMP2113", "COMP2123", "ENGG1340"),)),
+        # "or equivalent" / approval do not remove the course requirement
+        ("COMP2119 or equivalent", (("COMP2119",),)),
+        ("COMP2119 or special approval by instructor", (("COMP2119",),)),
     ],
 )
 def test_prerequisite_text_ignores_restrictions_and_placeholders(text, expected):
@@ -229,3 +239,98 @@ def test_a_title_containing_another_course_code_is_a_sentence():
 
     assert not _plausible_title("Basic Spoken Cantonese for Mandarin, or CUND9002 Practical")
     assert _plausible_title("Basic Spoken Cantonese for Mandarin Speakers")
+
+
+def test_a_file_with_several_degrees_reads_one_at_a_time():
+    result = parsed("multi_programme.txt")
+    assert result.programmes == ["COMPUTER ENGINEERING", "ELECTRICAL ENGINEERING"]
+    assert result.programme == "COMPUTER ENGINEERING"  # the first, by default
+    assert codes(result, elective=False) == ["ENGG1000", "COMP2113", "ELEC2441", "COMP3230"]
+    assert "ELEC2147" not in result.by_code()  # a course of the other degree only
+
+
+def test_choosing_another_degree_changes_the_required_courses():
+    result = parse_document(SYLLABI / "multi_programme.txt", programme="electrical engineering")
+    assert result.programme == "ELECTRICAL ENGINEERING"
+    assert codes(result, elective=False) == ["ENGG1000", "ELEC2147", "ELEC3141"]
+    assert "COMP3230" not in result.by_code() and "ELEC2441" not in result.by_code()
+    # COMP2113 is only described here, so it is available but not required.
+    assert result.by_code()["COMP2113"].elective
+
+
+def test_minor_tables_after_a_degree_are_not_part_of_it():
+    result = parse_document(SYLLABI / "multi_programme.txt", programme="ELECTRICAL ENGINEERING")
+    assert "ELEC9999" not in result.by_code()
+
+
+def test_descriptions_after_a_closed_section_still_add_prerequisites():
+    by = parsed("multi_programme.txt").by_code()
+    assert by["COMP2113"].prerequisites == (("ENGG1000", "ENGG1330"),)
+    electrical = parse_document(SYLLABI / "multi_programme.txt", programme="ELECTRICAL ENGINEERING")
+    assert electrical.by_code()["ELEC3141"].prerequisites == (("ELEC2147",),)
+
+
+def test_unknown_programme_falls_back_to_the_first_with_a_warning():
+    result = parse_document(SYLLABI / "multi_programme.txt", programme="Civil Engineering")
+    assert result.programme == "COMPUTER ENGINEERING"
+    assert any("Civil Engineering" in w for w in result.warnings)
+
+
+def test_single_programme_documents_report_no_programmes():
+    assert parsed("list_style.txt").programmes == []
+
+
+def test_a_course_is_never_its_own_prerequisite():
+    course = parse_text(
+        "MATH1853. Linear algebra (6 credits)\n"
+        "Prerequisite: MATH1011 or MATH1853\n"
+    ).courses[0]
+    assert course.prerequisites == (("MATH1011",),)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        # "A or (B and C)" is expanded into the app's AND-of-OR form
+        (
+            "ELEC2543 Object-oriented programming or (COMP2119 Data structures and COMP2396 Java)",
+            (("ELEC2543", "COMP2119"), ("ELEC2543", "COMP2396")),
+        ),
+        ("(AAAA1111 or BBBB2222) and CCCC3333", (("AAAA1111", "BBBB2222"), ("CCCC3333",))),
+        # the "and" of a title is not a connector
+        (
+            "ENGG1111 Computer programming and applications or ENGG1112 or ENGG1330",
+            (("ENGG1111", "ENGG1112", "ENGG1330"),),
+        ),
+        # quotes around a title do not hide the code; "and either ..." is a real "and"
+        ("\u201cCHIN9501 Chinese as a foreign language I\u201d or equivalent", (("CHIN9501",),)),
+        ("PSYC1004 and either PSYC2007 or PSYC2051.", (("PSYC1004",), ("PSYC2007", "PSYC2051"))),
+        # a grade on a course is not another route around it
+        ("COMP2119 (Grade B or above) or special approval", (("COMP2119",),)),
+        ("COMP2119 with grade B", (("COMP2119",),)),
+        # "Pass in X" is just X
+        ("Level 2 in HKDSE Mathematics or Pass in MATH1011", ()),
+        # a clause implied by a smaller one is redundant
+        ("COMP1117 and (COMP1117 or COMP1118)", (("COMP1117",),)),
+        ("COMP1117; and COMP1118 or COMP1119", (("COMP1117",), ("COMP1118", "COMP1119"))),
+        # unbalanced brackets fall back to the flat reading instead of failing
+        ("COMP1117 and (COMP1118 or COMP1119", (("COMP1117",), ("COMP1118", "COMP1119"))),
+    ],
+)
+def test_prerequisite_grammar(text, expected):
+    assert parse_prerequisites(text) == expected
+
+
+def test_a_no_course_alternative_is_kept_only_when_its_course_is_in_the_document():
+    result = parse_text(
+        "GRMN1001. German I.1 (6 credits)\n"
+        "Prerequisite: Nil\n"
+        "GRMN2001. German II.1 (6 credits)\n"
+        "Prerequisite: GRMN1001 or comparable level acquired elsewhere.\n"
+        "MATH1851. Calculus (6 credits)\n"
+        "Prerequisite: Level 2 in HKDSE Mathematics, or Pass in MATH1011.\n"
+    )
+    by = result.by_code()
+    assert by["GRMN2001"].prerequisites == (("GRMN1001",),)  # usable for ordering
+    assert by["MATH1851"].prerequisites == ()  # MATH1011 is not in the document
+    assert any("MATH1851" in w and "not (only) course codes" in w for w in result.warnings)

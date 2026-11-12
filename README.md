@@ -79,17 +79,29 @@ The parser reads three layouts, which can be mixed in one document: labelled blo
 descriptions (`COMP1117. Computer programming (6 credits)` followed by prose and
 `Prerequisite:` / `Assessment:` lines), and plain course lists (`CODE. Title (6 credits)` under
 headings such as "Core courses" or "Disciplinary Electives", with or without descriptions later).
-It was checked on nine real 2025-26/2026-27 documents (BEcon, BEng(CompSc), BA, BJ, BJ(MAI),
-BSocSc, LLB, BA&LLB and the ENGG regulations), which differ a lot: see "Known limitations" for what still needs care. A regulations
+It was checked on eleven real 2025-26/2026-27 documents (BEcon, BEng(CompSc), BEng(DASE), BEng(CE, EE,
+ElecE), BA, BJ, BJ(MAI), BSocSc, LLB, BA&LLB and the ENGG regulations), which differ a lot: see "Known limitations" for what still needs care. A regulations
 document (rules but no course list) is recognised and the app says to upload the syllabus.
 
 - **Required vs choice.** Elective lists, "choose one of" pairs, "Focus" lists and courses that
   appear only in a catalogue are tagged as electives. The app plans the required courses and
   says how many it left out; add an elective by its code (its details are filled in from the
   document) or list the courses you want under **Only plan these courses**.
+- **Several degrees in one file.** Some documents hold one syllabus per degree (for example
+  Computer, Electrical and Electronic Engineering, each starting with its title and `SYLLABUS`).
+  The first degree is read by default, the app lists the others under **Programme in this
+  document**, and choosing one and pressing **Build my plan** again plans that degree. Each
+  degree's tables are kept apart; the shared course descriptions after them are used by all.
+  Command line: `--programme "ELECTRICAL ENGINEERING"` with `syllabus_report` or `parse_cli`.
 - **Several programmes in one file.** Tables after a `MAJOR IN ...` / `MINOR IN ...` heading are
   ignored. A document with more than 60 courses and no list from you (for example the BA
   catalogue) is not planned; the app asks for your course list instead.
+- **Prerequisite expressions** are read with brackets and precedence: `ELEC2543 or (COMP2119 and
+  COMP2396)` becomes the equivalent AND-of-OR form, the "and" inside a course title is not a
+  connector, `, or` extends a list of alternatives, and "take X concurrently" or a grade on a
+  course is not a prerequisite. An alternative that is an exam level ("Level 2 in HKDSE
+  Mathematics, or MATH1011") makes the requirement impossible to enforce, so it is dropped and
+  reported, unless one of its courses is in the document (then it is kept for ordering).
 - **Prerequisites that are not course codes** ("At least one 2000-level course", "special
   approval") are reported as warnings instead of silently dropped. `Mutually exclusive with`,
   `Non-permissible combination` and placeholder codes such as `XXXX2002` are never prerequisites.

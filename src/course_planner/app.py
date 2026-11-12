@@ -104,11 +104,23 @@ def build_plan() -> None:
         ss.pop("gen", None)
         return
 
-    parsed, notices = read_document(data, name, store())
+    wanted = ss.get("programme") if ss.get("programmes") else None
+    parsed, notices = read_document(data, name, store(), wanted)
     ss.notices = notices
+    ss.programmes = parsed.programmes if parsed is not None else []
     if parsed is None:
         ss.pop("gen", None)
         return
+    if parsed.programmes:
+        notices.append(
+            (
+                "info",
+                f"This document describes {len(parsed.programmes)} programmes "
+                f"({'; '.join(parsed.programmes)}). Planning '{parsed.programme}'. To plan "
+                "another one, choose it under 'Programme in this document' and press "
+                "'Build my plan' again.",
+            )
+        )
     notices.extend(("warning", w) for w in parsed.warnings[:SHOWN_WARNINGS])
     ss.more_warnings = parsed.warnings[SHOWN_WARNINGS:]
 
@@ -334,6 +346,8 @@ def render_input() -> None:
         st.caption(
             "A short fictional Computer Science programme, so you can try the app right away."
         )
+    if programmes := ss.get("programmes"):
+        st.selectbox("Programme in this document", programmes, key="programme")
     st.text_area(
         "Courses you have already completed (optional)",
         placeholder="e.g. COMP1117, MATH1013",

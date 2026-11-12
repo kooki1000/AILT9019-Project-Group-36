@@ -16,7 +16,12 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from course_planner.models import Course, ParseResult
-from course_planner.prerequisites import COURSE_CODE, is_none_text, parse_prerequisites
+from course_planner.prerequisites import (
+    COURSE_CODE,
+    is_none_text,
+    parse_prerequisites,
+    parse_prerequisites_detailed,
+)
 
 SUPPORTED_EXTENSIONS = (".pdf", ".txt", ".csv")
 
@@ -50,7 +55,10 @@ _CHOOSE_ONE_RE = re.compile(r"\b(?:choose|select|take) (?:at least )?one of the 
 _NOT_HEADING_RE = re.compile(
     r"^(?:\(?\d+[\).]?\s|\([a-z]+\)\s|[A-Z]{1,3}\s?\d+\.\s|[A-Za-z]{2,4}[xX]{3,4})"
 )
-_PROGRAMME_RE = re.compile(r"^(?:(?:MAJOR|MINOR) IN\b|SYLLABUSES? FOR THE DEGREE OF\b)")
+_SECTION_RE = re.compile(r"^SYLLABUS(?:ES)?$")  # a programme's own "<TITLE> / SYLLABUS" heading
+_PROGRAMME_RE = re.compile(
+    r"^(?:(?:MAJOR|MINOR) IN\b|Minor in\b|SYLLABUSES? FOR THE DEGREE OF\b)"
+)
 _YEARS = r"[1-6](?:\s*(?:or|,|/)\s*[1-6])*"
 _ROW_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\s+(.+?)\s+(\d{{1,2}})$")
 _ROW_YEAR_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\s+(.+?)\s+{_YEARS}\s+(\d{{1,2}})$")
@@ -90,23 +98,29 @@ class EmptyDocumentError(ValueError):
     """Raised when a document yields no readable text at all."""
 
 
-def parse_document(data: bytes | str | Path, filename: str = "") -> ParseResult:
-    """Parse an uploaded file. ``filename`` decides the format for ``bytes``."""
+def parse_document(
+    data: bytes | str | Path, filename: str = "", programme: str | None = None
+) -> ParseResult:
+    """Parse an uploaded file. ``filename`` decides the format for ``bytes``.
+
+    ``programme`` picks one degree when the document contains several (see
+    ``ParseResult.programmes``); the first is read by default.
+    """
     if isinstance(data, Path):
         filename = filename or data.name
         data = data.read_bytes()
     suffix = Path(filename).suffix.lower()
     if isinstance(data, str):
-        return parse_csv(data) if suffix == ".csv" else parse_text(data)
+        return parse_csv(data) if suffix == ".csv" else parse_text(data, programme)
     if suffix not in SUPPORTED_EXTENSIONS:
         raise UnsupportedFileError(
             f"'{filename or 'This file'}' is not a supported file type. "
             "Please upload a PDF, plain text (.txt) or CSV file."
         )
     if suffix == ".pdf":
-        return parse_text(extract_pdf_text(data))
+        return parse_text(extract_pdf_text(data), programme)
     text = data.decode("utf-8-sig", errors="replace")
-    return parse_csv(text) if suffix == ".csv" else parse_text(text)
+    return parse_csv(text) if suffix == ".csv" else parse_text(text, programme)
 
 
 def extract_pdf_text(data: bytes) -> str:
@@ -157,11 +171,11 @@ def _codes(text: str) -> list[str]:
     return _CODE_RE.findall(normalised)
 
 
-def parse_text(text: str) -> ParseResult:
+def parse_text(text: str, programme: str | None = None) -> ParseResult:
     """Parse the text form of a requirement document or faculty syllabus."""
     if not text.strip():
         raise EmptyDocumentError("The document is empty, so there is nothing to parse.")
-    reader = _Reader()
+    reader = _Reader(programme)
     for raw_line in text.splitlines():
         line = _BULLET_RE.sub("", raw_line, count=1).strip()
         if line and not _NOISE_RE.match(line):
@@ -180,6 +194,7 @@ class _Entry:
     prereq_text: str = ""
     # One vote per table row / block that lists the course: True when that listing is elective.
     votes: tuple[bool, ...] = ()
+    programme: int | None = None  # which programme section listed it; None: shared catalogue
     # Credits that came from a wrapped line, not the header line: weaker evidence.
     weak_credits: bool = False
 
@@ -200,6 +215,7 @@ class _Description:
     choice: bool = False  # the entry above ended in "or": this is one of several alternatives
     ends_or: bool = False  # this entry itself ends in "or" / "; OR"
     plain: bool = False  # header written without a period: "CODE Title (6 credits)"
+    catalogue: bool = False  # after a closed programme section: never a requirement list
 
 
 class _Reader:
@@ -216,7 +232,11 @@ class _Reader:
     continues the line above.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, programme: str | None = None) -> None:
+        self.wanted = programme
+        self.section = 0
+        self.names: list[str] = []
+        self.prev_line = ""
         self.entries: list[_Entry] = []
         self.warnings: list[str] = []
         self.legacy: list[str] | None = None
@@ -240,7 +260,10 @@ class _Reader:
     # ------------------------------------------------------------------ input
 
     def feed(self, line: str) -> None:
+        previous, self.prev_line = self.prev_line, line
         self.line_no += 1
+        if _SECTION_RE.match(line) and self._starts_programme(previous):
+            return
         if self.line_no <= 3 and line.upper().startswith("REGULATIONS FOR"):
             self.regulations = True
         desc = self.desc
@@ -265,7 +288,16 @@ class _Reader:
         if self.desc is not None and not self.desc.plain:
             return False  # inside a description, a code-led line is prose
         if self.rows_closed:
-            return _HEADER_RE.match(line) is not None  # another programme's table: skip it
+            # Another programme's tables are skipped, but course descriptions that follow
+            # them still carry the prerequisites and assessments: read them as catalogue.
+            header = _HEADER_RE.match(line)
+            if header and _PAREN_CREDITS_RE.search(line) and "|" not in line:
+                code = header.group(1)
+                rest = re.sub(rf"^{_MARK}", "", line[len(code):]).strip()
+                if _plausible_title(rest):
+                    self._start_description(code, rest, plain=True)
+                    return True
+            return header is not None
         plain = "|" not in line and ":" not in line
         if plain:
             slash = _SLASH_ROW_RE.match(line)
@@ -356,6 +388,19 @@ class _Reader:
             return
         self._apply_heading(line)
 
+    def _starts_programme(self, title: str) -> bool:
+        """A standalone "SYLLABUS" line opens a programme; ``title`` is the line above it."""
+        if not title or len(title) > 90 or title.endswith("."):
+            return False
+        self._close()
+        if self.names:  # a further programme: start from a clean slate
+            self.section = len(self.names)
+            self.rows_closed = self.table_mode = self.elective = self.choose = False
+            self.open_cluster, self.carry, self.alt_open = [], None, False
+            self.default_credits, self.after_or, self.heading = None, False, (-99, None)
+        self.names.append(title.strip())
+        return True
+
     def _apply_heading(self, line: str) -> None:
         if _CHOOSE_ONE_RE.search(line) and len(line) <= 170 and not line.endswith("."):
             self.choose = True  # even when the heading also says "Capstone course"
@@ -392,7 +437,7 @@ class _Reader:
         self.desc = _Description(
             code, [rest.strip()], credits, 0 if found else MAX_TITLE_LINES,
             {"prereq": [], "assess": []}, choice=self.after_or, ends_or=alternative,
-            weak_credits=weak, plain=plain,
+            weak_credits=weak, plain=plain, catalogue=self.rows_closed,
         )
 
     def _description_line(self, line: str) -> bool:
@@ -455,7 +500,7 @@ class _Reader:
         self._close()
         elective = self.elective or cluster
         course = Course(code, _clean_title(title), credits, elective=elective)
-        self.entries.append(_Entry("row", course, votes=(elective,)))
+        self.entries.append(_Entry("row", course, votes=(elective,), programme=self.section))
         if credits is None:
             self.open_cluster.append(len(self.entries) - 1)
         else:
@@ -464,7 +509,9 @@ class _Reader:
     def _add_reference(self, code: str, title: str) -> None:
         """A course merely mentioned in a list (no credits): never a requirement by itself."""
         self._close()
-        self.entries.append(_Entry("ref", Course(code, _clean_title(title))))
+        self.entries.append(
+            _Entry("ref", Course(code, _clean_title(title)), programme=self.section)
+        )
 
     def _close(self) -> None:
         if self.legacy is not None:
@@ -489,24 +536,33 @@ class _Reader:
             body = desc.body or []
             tail = [desc.title_parts[-1], *body[:1]]
             wrapped_or = any(re.search(r"\bor\s*$", t, re.IGNORECASE) for t in tail)
-            ends_or = not desc.seen_field and (desc.ends_or or wrapped_or)
+            listed = not desc.seen_field and not desc.catalogue
+            ends_or = listed and (desc.ends_or or wrapped_or)
             self.after_or = ends_or
             choice = desc.choice or ends_or
-            votes = () if desc.seen_field else (self.elective or self.choose or choice,)
-            if not desc.seen_field:
+            votes = (self.elective or self.choose or choice,) if listed else ()
+            if listed:
                 # A list item. Headings written between list items are read as body text of
                 # the item above; they classify the entries that follow.
                 for line in desc.body or []:
                     self._apply_heading(line)
             self.entries.append(
-                _Entry("desc", course, prereq_text, votes, weak_credits=desc.weak_credits)
+                _Entry(
+                    "desc", course, prereq_text, votes, weak_credits=desc.weak_credits,
+                    programme=self.section if votes else None,
+                )
             )
 
     def finish(self) -> ParseResult:
         self._close()
         result = ParseResult(warnings=self.warnings)
+        entries = self.entries
+        if len(self.names) > 1:
+            chosen = self._chosen_programme(result)
+            result.programmes, result.programme = list(self.names), self.names[chosen]
+            entries = [e for e in entries if e.programme in (None, chosen)]
         merged: dict[str, _Entry] = {}
-        for entry in self.entries:
+        for entry in entries:
             code = entry.course.code
             if code not in merged:
                 merged[code] = entry
@@ -516,12 +572,17 @@ class _Reader:
                 )
             else:
                 merged[code] = _merge(merged[code], entry)
-        has_tables = any(e.votes for e in self.entries if e.kind != "legacy")
+        has_tables = any(e.votes for e in entries if e.kind != "legacy")
+        in_document = set(merged)
         for entry in merged.values():
             # Elective only if every list that names the course says so. A course that is only
             # described (or mentioned) in a document with requirement tables is not required.
             elective = all(entry.votes) if entry.votes else has_tables
-            course = replace(entry.course, elective=elective)
+            course = replace(
+                entry.course,
+                elective=elective,
+                prerequisites=_without_itself(entry.course, _soft_groups(entry, in_document)),
+            )
             result.courses.append(course)
             if course.credits is None:
                 result.warnings.append(f"{course.code}: credits were not found in the document.")
@@ -542,6 +603,46 @@ class _Reader:
                     "Upload the matching syllabus ('Syllabuses for the degree of ...')."
                 )
         return result
+
+
+    def _chosen_programme(self, result: ParseResult) -> int:
+        if self.wanted:
+            wanted = self.wanted.strip().lower()
+            for index, name in enumerate(self.names):
+                if name.lower() == wanted:
+                    return index
+            result.warnings.append(
+                f"Programme '{self.wanted}' was not found in this document; "
+                f"showing '{self.names[0]}'."
+            )
+        return 0
+
+
+def _soft_groups(entry: _Entry, in_document: set[str]) -> tuple[tuple[str, ...], ...]:
+    """Groups with a no-course alternative ("or comparable level"), kept when usable for ordering.
+
+    They are kept only if one of their courses is in the document; otherwise they could never be
+    satisfied and would wrongly stop the course from being planned.
+    """
+    if not entry.prereq_text:
+        return ()
+    soft = parse_prerequisites_detailed(entry.prereq_text)[1]
+    return tuple(group for group in soft if any(code in in_document for code in group))
+
+
+def _without_itself(
+    course: Course, extra: tuple[tuple[str, ...], ...] = ()
+) -> tuple[tuple[str, ...], ...]:
+    """A course is never its own prerequisite (text such as "or take X and Y together")."""
+    groups = (
+        tuple(c for c in group if c != course.code)
+        for group in (*course.prerequisites, *extra)
+    )
+    unique: list[tuple[str, ...]] = []
+    for group in groups:
+        if group and group not in unique:
+            unique.append(group)
+    return tuple(unique)
 
 
 def _merge(first: _Entry, second: _Entry) -> _Entry:

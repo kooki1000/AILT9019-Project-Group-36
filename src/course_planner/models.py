@@ -42,6 +42,10 @@ class ParseResult:
 
     courses: list[Course] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    # Several degrees in one file (e.g. "COMPUTER ENGINEERING" / "ELECTRICAL ENGINEERING"):
+    # their names, and the one ``courses`` was read for. Empty for a single programme.
+    programmes: list[str] = field(default_factory=list)
+    programme: str = ""
 
     def by_code(self) -> dict[str, Course]:
         return {course.code: course for course in self.courses}

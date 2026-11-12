@@ -39,7 +39,7 @@ def test_unreadable_and_empty_files_are_reported(tmp_path, capsys):
 def test_folders_are_expanded_to_supported_files():
     names = {p.name for p in collect([SYLLABI])}
     assert names == {
-        "catalogue_descriptions.txt", "law_style.txt", "list_style.txt",
+        "catalogue_descriptions.txt", "law_style.txt", "list_style.txt", "multi_programme.txt",
         "table_year_column.txt", "tables_and_descriptions.txt",
     }
 
@@ -50,3 +50,11 @@ def test_catalogue_sized_documents_get_a_note_not_a_problem(tmp_path):
     report = inspect_document(big)
     assert report.suspicious == []
     assert any("course list" in note for note in report.notes)
+
+
+def test_report_names_the_programmes_and_accepts_a_choice(capsys):
+    path = str(SYLLABI / "multi_programme.txt")
+    assert main([path, "--programme", "ELECTRICAL ENGINEERING"]) == 0
+    out = capsys.readouterr().out
+    assert "COMPUTER ENGINEERING; ELECTRICAL ENGINEERING" in out
+    assert "read: ELECTRICAL ENGINEERING" in out
