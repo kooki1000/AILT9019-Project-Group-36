@@ -1,0 +1,35 @@
+SYLLABUSES FOR THE DEGREE OF BACHELOR OF SCIENCE (constructed test document, fictional)
+4. The following courses are designated as Faculty Core courses: ACCT1101, ECON1210,
+FINA1310 and a statistics course, as prescribed in the syllabus.
+1. UG 5 requirements [54 credits]
+(a) Languages* [12 credits]
+Course code Course title Year of study Credits
+CAES1001# Academic communication in English* 1 0
+CAES9920 Academic communication for business and 2 6
+economics*
+(b) HKU Common Core Curriculum* [36 credits]
+Course code Course title Year of study Credits
+CCXXxxxx 3 CC courses in any three Areas of Inquiry* 1 18
+2. Major in Economics [78 credits]
+Course code Course title Year of study Credits
+Faculty Core Courses - complete all of the following courses:
+ACCT1101 Introduction to financial accounting1 1 6
+ECON1210 Introductory microeconomics 1 6
+Statistics requirement - choose one of the following:
+ECON1280 or Analysis of economic data or
+1 or 2 6
+IIMT1640 Probability and statistics for business
+Disciplinary Core Courses - complete all of the following courses:
+ECON2210 Intermediate microeconomics 2 or 3 6
+ECON4200 Senior seminar in economics and finance* 4 6
+(Capstone course)
+Disciplinary Electives
+ECONxxxx Economics disciplinary electives 2 or 3 or 4 18
+3. Free Electives [108 credits] - any courses except Common Core courses
+Notes:
+1. The course shall be taken in the first semester of the first year.
+ECONOMICS DISCIPLINARY ELECTIVES (LIST A)
+Course code Course title Credits
+ECON2214 Games and decisions 6
+ECON2216 Industrial organization 6
+ECON4294 Dissertation 12

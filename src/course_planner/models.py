@@ -21,6 +21,9 @@ class Course:
     # Number of graded assessments (assignments, quizzes, exams, ...), if the
     # document states it. ``None`` means "unknown", not "zero".
     assessments: int | None = None
+    # True for courses a student chooses from a list ("electives", "choose one of")
+    # rather than must take. Fixed-list documents leave this False.
+    elective: bool = False
 
     @property
     def prerequisite_codes(self) -> frozenset[str]:

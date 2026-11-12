@@ -256,3 +256,59 @@ def test_elective_with_dataset_reviews_is_scored_with_them(app, monkeypatch, tmp
     at = add_arts_elective(click(app, "Build my plan"))
     row = next(r for t in at.table for _, r in t.value.iterrows() if r["Course"] == "ARTS1234")
     assert row["Basis"].startswith("Past student reviews (1)")
+
+
+SYLLABI = Path(__file__).parent / "fixtures" / "syllabi"
+
+
+def paste(at, document: str):
+    at.radio(key="source").set_value("Paste text").run()
+    at.text_area(key="pasted").set_value(document)
+    return at
+
+
+def planned(at) -> set[str]:
+    return {code for semester in plan(at) for code in semester}
+
+
+def test_syllabus_plans_required_courses_and_says_electives_were_left_out(app):
+    paste(app, (SYLLABI / "tables_and_descriptions.txt").read_text())
+    at = click(app, "Build my plan")
+    assert not at.exception
+    assert planned(at) == {"COMP1117", "COMP2113", "COMP2120", "COMP3230", "COMP3297"}
+    assert "electives or 'choose one' options" in text(at)
+    assert "special approval" in text(at)  # a non-code prerequisite is reported
+
+
+def test_known_elective_is_added_with_details_from_the_document(app):
+    paste(app, (SYLLABI / "tables_and_descriptions.txt").read_text())
+    at = click(app, "Build my plan")
+    at.text_input(key="el_code").set_value("COMP3340")
+    at = click(at, "Add elective")
+    assert "Its details came from your document" in text(at)
+    row = next(r for t in at.table for _, r in t.value.iterrows() if r["Course"] == "COMP3340")
+    assert row["Title"] == "Introduction to deep learning" and row["Credits"] == "6"
+
+
+def test_student_can_choose_their_own_courses_from_a_catalogue(app):
+    paste(app, (SYLLABI / "catalogue_descriptions.txt").read_text())
+    app.text_area(key="only_text").set_value("HIST1001, hist1002, hist2001, HIST9999")
+    at = click(app, "Build my plan")
+    assert planned(at) == {"HIST1001", "HIST1002", "HIST2001"}
+    assert "HIST9999" in text(at)  # named as not found rather than ignored
+
+
+def test_a_catalogue_sized_document_asks_for_a_course_list_instead_of_planning(app):
+    many = "\n".join(
+        f"ARTS{n:04d}. Course {n} (6 credits)\nAssessment: 100% coursework."
+        for n in range(1000, 1070)
+    )
+    at = click(paste(app, many), "Build my plan")
+    assert "more than one programme needs" in text(at)
+    assert not at.table
+
+
+def test_long_warning_lists_are_collapsed(app):
+    many = "\n".join(f"ARTS{n:04d} Course {n}" for n in range(1000, 1012))  # no credits anywhere
+    at = click(paste(app, many), "Build my plan")
+    assert [e.label for e in at.expander] == ["7 more note(s) about this document"]

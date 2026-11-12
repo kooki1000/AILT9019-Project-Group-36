@@ -1,0 +1,13 @@
+{
+  "CAES1001": {"credits": 0, "prerequisites": []},
+  "CAES9920": {"credits": 6, "prerequisites": []},
+  "ACCT1101": {"credits": 6, "prerequisites": []},
+  "ECON1210": {"credits": 6, "prerequisites": []},
+  "ECON1280": {"credits": 6, "prerequisites": []},
+  "IIMT1640": {"credits": 6, "prerequisites": []},
+  "ECON2210": {"credits": 6, "prerequisites": []},
+  "ECON4200": {"credits": 6, "prerequisites": []},
+  "ECON2214": {"credits": 6, "prerequisites": []},
+  "ECON2216": {"credits": 6, "prerequisites": []},
+  "ECON4294": {"credits": 12, "prerequisites": []}
+}

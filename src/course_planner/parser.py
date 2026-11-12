@@ -12,10 +12,11 @@ from __future__ import annotations
 import csv
 import io
 import re
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from course_planner.models import Course, ParseResult
-from course_planner.prerequisites import COURSE_CODE, parse_prerequisites
+from course_planner.prerequisites import COURSE_CODE, is_none_text, parse_prerequisites
 
 SUPPORTED_EXTENSIONS = (".pdf", ".txt", ".csv")
 
@@ -35,6 +36,38 @@ _TITLE_END_RE = re.compile(
 _ITEM_SPLIT_RE = re.compile(r"\s*(?:[,;+]|\band\b)\s*", re.IGNORECASE)
 _LEADING_COUNT_RE = re.compile(r"^(\d+)\b(?!\s*%)")
 _TRAILING_JUNK = " \t-–—:|,;"
+
+# Syllabus layouts (HKU faculty documents). Footnote markers such as ``*``, ``#`` or ``^``
+# may follow a course code.
+_MARK = r"[*#^†‡]*"
+_DESC_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\.\s+(\S.*)$")
+_PAREN_CREDITS_RE = re.compile(r"\(\s*(\d+)\s*credits?\s*\)", re.IGNORECASE)
+_PROGRAMME_RE = re.compile(r"^(?:(?:MAJOR|MINOR) IN\b|SYLLABUSES? FOR THE DEGREE OF\b)")
+_YEARS = r"[1-6](?:\s*(?:or|,|/)\s*[1-6])*"
+_ROW_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\s+(.+?)\s+(\d{{1,2}})$")
+_ROW_YEAR_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\s+(.+?)\s+{_YEARS}\s+(\d{{1,2}})$")
+_SLASH_ROW_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\s*/\s*(.+?)\s*/\s*(\d{{1,2}})$")
+_OR_ROW_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\s+or\s+(?!{COURSE_CODE})(.+?)(?:\s+or)?$")
+_BARE_ROW_RE = re.compile(rf"^({COURSE_CODE}){_MARK}\s+(\S.*)$")
+_YEAR_CREDITS_RE = re.compile(rf"^{_YEARS}\s+(\d{{1,2}})$")
+_TABLE_HEADER_RE = re.compile(r"^course\s*code\b", re.IGNORECASE)
+_FIELD_RE = re.compile(
+    r"^(pre-?requisites?|assessments?|mutually exclusive with|co-?requisites?)\s*:\s*(.*)$",
+    re.IGNORECASE,
+)
+_ELECTIVE_HEAD_RE = re.compile(
+    r"elective|to be chosen|chosen from|choose (?:any|\d+|from)|select (?:any|\d+|from)",
+    re.IGNORECASE,
+)
+_REQUIRED_HEAD_RE = re.compile(
+    r"\b(core|required|compulsory|capstone|foundation|introductory|advanced|complete all|"
+    r"major|prerequisite)\b",
+    re.IGNORECASE,
+)
+_NOISE_RE = re.compile(r"^(?:\d{1,3}|[_\-=]{5,})$")
+_STUCK_DIGIT_RE = re.compile(r"(?<=[a-z])\d$")
+_CONDITION_RE = re.compile(r"consent|permission|approval|standing|at least", re.IGNORECASE)
+MAX_TITLE_LINES = 2
 
 
 class UnsupportedFileError(ValueError):
@@ -113,37 +146,360 @@ def _codes(text: str) -> list[str]:
 
 
 def parse_text(text: str) -> ParseResult:
-    """Parse the text form of a requirement document."""
+    """Parse the text form of a requirement document or faculty syllabus."""
     if not text.strip():
         raise EmptyDocumentError("The document is empty, so there is nothing to parse.")
-
-    blocks: list[list[str]] = []
+    reader = _Reader()
     for raw_line in text.splitlines():
         line = _BULLET_RE.sub("", raw_line, count=1).strip()
-        if not line:
-            continue
-        if _starts_course(line) and not _continues_previous(blocks):
-            blocks.append([line])
-        elif blocks:
-            blocks[-1].append(line)
+        if line and not _NOISE_RE.match(line):
+            reader.feed(line)
+    return reader.finish()
 
-    result = ParseResult()
-    seen: set[str] = set()
-    for block in blocks:
-        course = _parse_block(block, result.warnings)
-        if course.code in seen:
-            result.warnings.append(
-                f"{course.code} appears more than once; only the first entry was kept."
-            )
-            continue
-        seen.add(course.code)
-        result.courses.append(course)
 
-    if not result.courses:
-        result.warnings.append(
-            "No course codes (like COMP1117) were found in this document."
+@dataclass
+class _Entry:
+    """One course as found in the text, before duplicates are merged."""
+
+    # "legacy" (labelled block), "row" (table row), "ref" (a bare "CODE title" mention in a
+    # list) or "desc" (course description)
+    kind: str
+    course: Course
+    prereq_text: str = ""
+    # One vote per table row / block that lists the course: True when that listing is elective.
+    votes: tuple[bool, ...] = ()
+    # Credits that came from a wrapped line, not the header line: weaker evidence.
+    weak_credits: bool = False
+
+
+@dataclass
+class _Description:
+    """A course description being read: its title may wrap and its fields follow."""
+
+    code: str
+    title_parts: list[str]
+    credits: int | None
+    title_lines_left: int
+    values: dict[str, list[str]]
+    field: str | None = None
+    weak_credits: bool = False
+
+
+class _Reader:
+    """Reads a document line by line.
+
+    Three layouts are recognised, and may be mixed in one document:
+
+    * labelled blocks (``COMP1117 Programming (6 credits)`` then ``Prerequisite:`` ...),
+    * table rows (``COMP1117 Computer programming 6``, optionally with a year column),
+    * course descriptions (``COMP1117. Computer programming (6 credits)`` followed by prose
+      and ``Prerequisite:`` / ``Assessment:`` lines).
+
+    Prose is never added to a title or a field; only a wrapped list ("... and" / "(A or")
+    continues the line above.
+    """
+
+    def __init__(self) -> None:
+        self.entries: list[_Entry] = []
+        self.warnings: list[str] = []
+        self.legacy: list[str] | None = None
+        self.desc: _Description | None = None
+        self.table_mode = False
+        self.year_column = False
+        self.elective = False
+        self.heading: tuple[int, bool | None] = (-99, None)
+        self.line_no = 0
+        self.open_cluster: list[int] = []  # row entries still waiting for their credits
+        self.carry: int | None = None  # credits for the next bare "CODE title" row
+        self.alt_open = False
+        self.rows_closed = False  # a later major/minor section: its tables are not ours
+
+    # ------------------------------------------------------------------ input
+
+    def feed(self, line: str) -> None:
+        self.line_no += 1
+        desc = self.desc
+        if desc is not None and desc.field in ("prereq", "assess") and _is_unfinished(
+            desc.values[desc.field]
+        ):
+            desc.values[desc.field].append(line)  # a wrapped list, even if it starts with a code
+            return
+        if _HEADER_RE.match(line):
+            if self.legacy is not None and _CONNECTOR_END_RE.search(self.legacy[-1]):
+                self.legacy.append(line)  # a wrapped prerequisite list
+                return
+            if self._code_line(line):
+                return
+        self._other_line(line)
+
+    def _code_line(self, line: str) -> bool:
+        desc = _DESC_RE.match(line)
+        if desc:
+            self._start_description(desc.group(1), desc.group(2))
+            return True
+        if self.desc is not None:
+            return False  # inside a description, a code-led line is prose
+        if self.rows_closed:
+            return _HEADER_RE.match(line) is not None  # another programme's table: skip it
+        plain = "|" not in line and ":" not in line
+        if plain:
+            slash = _SLASH_ROW_RE.match(line)
+            if slash:
+                credits = int(slash.group(3))
+                self._add_row(slash.group(1), slash.group(2), credits, cluster=True)
+                self.carry, self.alt_open = credits, True
+                return True
+            row = (self.year_column and _ROW_YEAR_RE.match(line)) or _ROW_RE.match(line)
+            if row and _plausible_title(row.group(2)):
+                self._add_row(row.group(1), row.group(2), int(row.group(3)))
+                return True
+            if self.table_mode:
+                either = _OR_ROW_RE.match(line)
+                if either and _plausible_title(either.group(2)):
+                    self._add_row(either.group(1), either.group(2), None, cluster=True)
+                    self.alt_open = True
+                    return True
+                bare = _BARE_ROW_RE.match(line)
+                if bare and self.alt_open and _plausible_title(bare.group(2)):
+                    self._add_row(bare.group(1), bare.group(2), self.carry, cluster=True)
+                    self.carry, self.alt_open = None, False
+                    return True
+                if bare and _plausible_title(bare.group(2)) and _CONNECTOR_START_RE.match(
+                    bare.group(2)
+                ) is None:
+                    self._add_reference(bare.group(1), bare.group(2).split(" / ")[0])
+                    return True
+        if self.table_mode and not self._looks_labelled(line):
+            return False  # prose that merely starts with a course code
+        if _starts_course(line):
+            self._close()
+            self.legacy = [line]
+            return True
+        return False
+
+    @staticmethod
+    def _looks_labelled(line: str) -> bool:
+        """A labelled-block header carries a field separator, a label or a credits note."""
+        return "|" in line or bool(_LABEL_RE.search(line) or _PAREN_CREDITS_RE.search(line))
+
+    def _other_line(self, line: str) -> None:
+        if self.table_mode and _PROGRAMME_RE.match(line) and any(
+            e.kind == "row" for e in self.entries
+        ):
+            self._close()
+            self.rows_closed = True
+            return
+        if _TABLE_HEADER_RE.match(line):
+            self._close()
+            if self.rows_closed:
+                return
+            self.table_mode = True
+            self.year_column = "year" in line.lower()
+            at, flag = self.heading
+            self.elective = bool(flag) and self.line_no - at <= 2
+            self.open_cluster, self.carry, self.alt_open = [], None, False
+            return
+        numbers = _YEAR_CREDITS_RE.match(line) if self.table_mode else None
+        if numbers:
+            credits = int(numbers.group(1))
+            for index in self.open_cluster:
+                entry = self.entries[index]
+                entry.course = replace(entry.course, credits=credits)
+            if self.open_cluster:
+                self.carry, self.alt_open = credits, True
+            self.open_cluster = []
+            return
+        if self.desc is not None and self._description_line(line):
+            return
+        if self.legacy is not None:
+            self.legacy.append(line)
+            return
+        flag = _heading_flag(line)
+        if flag is not None:
+            self.heading = (self.line_no, flag)
+            self.elective = flag
+
+    # ------------------------------------------------------------ descriptions
+
+    def _start_description(self, code: str, rest: str) -> None:
+        self._close()
+        credits: int | None = None
+        found = _PAREN_CREDITS_RE.search(rest)
+        if found:
+            credits, rest = int(found.group(1)), rest[: found.start()]  # drop any note after it
+        self.desc = _Description(
+            code, [rest.strip()], credits, 0 if found else MAX_TITLE_LINES,
+            {"prereq": [], "assess": []},
         )
-    return result
+
+    def _description_line(self, line: str) -> bool:
+        desc = self.desc
+        assert desc is not None
+        field = _FIELD_RE.match(line)
+        if field:
+            name = field.group(1).lower()
+            desc.field = "prereq" if name.startswith("pre") else (
+                "assess" if name.startswith("assess") else "ignore"
+            )
+            if desc.field != "ignore":
+                desc.values[desc.field].append(field.group(2).strip())
+            return True
+        if (
+            desc.field is None
+            and desc.title_lines_left > 0
+            and len(line) <= 90
+            and ". " not in line
+            and not line.endswith(".")
+        ):
+            # Join first: the "(6 credits)" note itself can wrap ("... (6" / "credits)").
+            joined = " ".join([*desc.title_parts, line])
+            found = _PAREN_CREDITS_RE.search(joined)
+            if found:
+                wrapped = bool(re.search(r"\(\s*\d*\s*$", desc.title_parts[-1]))
+                desc.title_parts = [joined[: found.start()].strip()]
+                desc.credits = int(found.group(1))
+                desc.weak_credits = not wrapped
+                desc.title_lines_left = 0
+            elif _may_continue(desc.title_parts[-1]):
+                desc.title_parts.append(line)
+                desc.title_lines_left -= 1
+            else:
+                desc.title_lines_left = 0  # the title was complete; this is the description
+            return True
+        if desc.field in ("prereq", "assess") and (
+            _is_unfinished(desc.values[desc.field]) or _CONNECTOR_START_RE.match(line)
+        ):
+            desc.values[desc.field].append(line)
+            return True
+        return True  # prose between the header and the fields
+
+    # ---------------------------------------------------------------- output
+
+    def _add_row(self, code: str, title: str, credits: int | None, cluster: bool = False) -> None:
+        self._close()
+        elective = self.elective or cluster
+        course = Course(code, _clean_title(title), credits, elective=elective)
+        self.entries.append(_Entry("row", course, votes=(elective,)))
+        if credits is None:
+            self.open_cluster.append(len(self.entries) - 1)
+        else:
+            self.open_cluster = []
+
+    def _add_reference(self, code: str, title: str) -> None:
+        """A course merely mentioned in a list (no credits): never a requirement by itself."""
+        self._close()
+        self.entries.append(_Entry("ref", Course(code, _clean_title(title))))
+
+    def _close(self) -> None:
+        if self.legacy is not None:
+            course, prereq_text = _parse_block(self.legacy)
+            course = replace(course, elective=self.elective)
+            self.legacy = None
+            # A fragment with no real title and no fields is prose that began with a code.
+            titled = len(re.findall(r"[A-Za-z]", course.title)) >= 3 and course.title[:1].isalnum()
+            if titled or prereq_text or course.assessments:
+                self.entries.append(_Entry("legacy", course, prereq_text, (course.elective,)))
+        if self.desc is not None:
+            desc, self.desc = self.desc, None
+            prereq_text = " ".join(v for v in desc.values["prereq"] if v)
+            assess_text = " ".join(v for v in desc.values["assess"] if v)
+            course = Course(
+                desc.code,
+                _clean_title(" ".join(p for p in desc.title_parts if p)),
+                desc.credits,
+                parse_prerequisites(prereq_text),
+                count_assessments(assess_text) if assess_text else None,
+            )
+            self.entries.append(_Entry("desc", course, prereq_text, weak_credits=desc.weak_credits))
+
+    def finish(self) -> ParseResult:
+        self._close()
+        result = ParseResult(warnings=self.warnings)
+        merged: dict[str, _Entry] = {}
+        for entry in self.entries:
+            code = entry.course.code
+            if code not in merged:
+                merged[code] = entry
+            elif entry.kind == merged[code].kind == "legacy":
+                result.warnings.append(
+                    f"{code} appears more than once; only the first entry was kept."
+                )
+            else:
+                merged[code] = _merge(merged[code], entry)
+        has_tables = any(e.kind == "row" for e in self.entries)
+        for entry in merged.values():
+            # Elective only if every list that names the course says so. A course that is only
+            # described (or mentioned) in a document with requirement tables is not required.
+            elective = all(entry.votes) if entry.votes else has_tables
+            course = replace(entry.course, elective=elective)
+            result.courses.append(course)
+            if course.credits is None:
+                result.warnings.append(f"{course.code}: credits were not found in the document.")
+            text = entry.prereq_text.strip()
+            if text and not is_none_text(text) and (
+                not course.prerequisites or _CONDITION_RE.search(text)
+            ):
+                shown = text if len(text) <= 80 else text[:77] + "..."
+                result.warnings.append(
+                    f"{course.code}: the prerequisite \"{shown}\" is not (only) course codes, "
+                    "so it was not checked."
+                )
+        if not result.courses:
+            result.warnings.append("No course codes (like COMP1117) were found in this document.")
+        return result
+
+
+def _merge(first: _Entry, second: _Entry) -> _Entry:
+    """Combine two entries for one course (table row, mention, description, or repeats).
+
+    Descriptions are the most informative, so on every field the first non-empty value
+    from a description wins; otherwise the earlier entry does. Credits written on a
+    header line beat credits taken from a wrapped line.
+    """
+    ranked = sorted((first, second), key=lambda e: e.kind != "desc")
+    a, b = ranked
+    credited = sorted(
+        (e for e in ranked if e.course.credits is not None), key=lambda e: e.weak_credits
+    )
+    with_prereqs = next((e for e in ranked if e.course.prerequisites), a)
+    course = Course(
+        code=a.course.code,
+        title=a.course.title or b.course.title,
+        credits=credited[0].course.credits if credited else None,
+        prerequisites=with_prereqs.course.prerequisites,
+        assessments=next(
+            (e.course.assessments for e in ranked if e.course.assessments is not None), None
+        ),
+    )
+    prereq_text = with_prereqs.prereq_text or a.prereq_text or b.prereq_text
+    kind = first.kind if first.kind != "ref" else second.kind
+    weak = credited[0].weak_credits if credited else False
+    return _Entry(kind, course, prereq_text, first.votes + second.votes, weak)
+
+
+def _may_continue(title: str) -> bool:
+    """A title wraps only after a comma, colon, hyphen, connector or open bracket."""
+    return bool(re.search(r"[,:;(\-–—]\s*$", title) or _is_unfinished([title]))
+
+
+def _clean_title(title: str) -> str:
+    title = re.sub(r"\s+(?:or|and)$", "", title.strip())
+    title = title.strip(" \t*#^†‡")
+    return _STUCK_DIGIT_RE.sub("", title).strip()
+
+
+def _plausible_title(title: str) -> bool:
+    """Reject prose that merely begins with a course code (e.g. "ECON1210 and a statistics...")."""
+    return not re.match(r"(and|or)\b", title) and ". " not in title and len(title) <= 120
+
+
+def _heading_flag(line: str) -> bool | None:
+    """True for an elective-list heading, False for a required one, None for other text."""
+    if len(line) > 110 or line.endswith("."):
+        return None
+    if _ELECTIVE_HEAD_RE.search(line):
+        return True
+    return False if _REQUIRED_HEAD_RE.search(line) else None
 
 
 def _is_unfinished(parts: list[str]) -> bool:
@@ -164,7 +520,7 @@ def _continues_previous(blocks: list[list[str]]) -> bool:
     return bool(blocks) and bool(_CONNECTOR_END_RE.search(blocks[-1][-1]))
 
 
-def _parse_block(block: list[str], warnings: list[str]) -> Course:
+def _parse_block(block: list[str]) -> tuple[Course, str]:
     header_match = _HEADER_RE.match(block[0])
     assert header_match  # guaranteed by _starts_course
     code = header_match.group(1)
@@ -184,6 +540,9 @@ def _parse_block(block: list[str], warnings: list[str]) -> Course:
         pieces = _LABEL_RE.split(segment)
         lead, labelled = pieces[0], zip(pieces[1::2], pieces[2::2], strict=True)
         if lead.strip():
+            title_done = bool(_TITLE_END_RE.search(" ".join(title_parts)))
+            if current is None and new_line and title_done:
+                continue  # prose or a heading after a complete header line
             if current in values:
                 # A fresh line after a labelled value only continues it when the value
                 # was cut off mid-list ("... and" / "(A or"). Otherwise it is a section
@@ -212,15 +571,14 @@ def _parse_block(block: list[str], warnings: list[str]) -> Course:
 
     prereq_text = " ".join(v for v in values["prereq"] if v)
     assess_text = " ".join(v for v in values["assess"] if v)
-    if credits is None:
-        warnings.append(f"{code}: credits were not found in the document.")
-    return Course(
+    course = Course(
         code=code,
         title=title,
         credits=credits,
         prerequisites=parse_prerequisites(prereq_text),
         assessments=count_assessments(assess_text) if assess_text else None,
     )
+    return course, prereq_text
 
 
 _CSV_ALIASES = {

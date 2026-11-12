@@ -25,6 +25,7 @@ def to_json(result) -> dict:
                 "title": c.title,
                 "credits": c.credits,
                 "assessments": c.assessments,
+                "elective": c.elective,
                 # AND of OR-groups: every inner list needs at least one course done.
                 "prerequisites": [list(group) for group in c.prerequisites],
             }

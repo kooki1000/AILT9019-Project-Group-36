@@ -40,6 +40,10 @@ SOURCE_UPLOAD, SOURCE_PASTE, SOURCE_SAMPLE = (
     "Use the sample document",
 )
 CODE_RE = re.compile(r"^[A-Z]{4}\d{4}[A-Z]?$")
+# More courses than this with no list from the student means the document is a catalogue or
+# covers several programmes, not one programme's requirements.
+MAX_COURSES_WITHOUT_LIST = 60
+SHOWN_WARNINGS = 5
 ICONS = {"success": "✅", "warning": "⚠️", "error": "❌", "info": "ℹ️"}
 
 ss = st.session_state
@@ -92,6 +96,7 @@ def read_source() -> tuple[bytes, str]:
 
 def build_plan() -> None:
     ss.pop("flash", None)
+    ss.pop("more_warnings", None)
     try:
         data, name = read_source()
     except InputError as exc:
@@ -104,10 +109,17 @@ def build_plan() -> None:
     if parsed is None:
         ss.pop("gen", None)
         return
-    notices.extend(("warning", w) for w in parsed.warnings)
+    notices.extend(("warning", w) for w in parsed.warnings[:SHOWN_WARNINGS])
+    ss.more_warnings = parsed.warnings[SHOWN_WARNINGS:]
 
     completed = parse_completed_courses(ss.get("completed_text", ""))
     known = {c.code for c in parsed.courses}
+    all_courses = parsed
+    parsed = choose_courses(all_courses, parse_completed_courses(ss.get("only_text", "")), notices)
+    if parsed is None:
+        ss.pop("gen", None)
+        return
+    ss.choices = {c.code: c for c in all_courses.courses if c not in parsed.courses}
     unknown = sorted(completed - known)
     if unknown:
         notices.append(
@@ -161,6 +173,51 @@ def build_plan() -> None:
         ss.reviews_by_course.setdefault(review.course_code, []).append(review)
 
 
+def choose_courses(
+    document: ParseResult, wanted: set[str], notices: list[tuple[str, str]]
+) -> ParseResult | None:
+    """The courses to plan: the student's own list, else the required ones in the document.
+
+    Returns ``None`` (with an explanation in ``notices``) when the document lists too many
+    courses to be a single programme and the student has not said which ones they take.
+    """
+    if wanted:
+        missing = sorted(wanted - {c.code for c in document.courses})
+        if missing:
+            notices.append(
+                ("warning", f"Not found in the document, so left out: {', '.join(missing)}.")
+            )
+        chosen = [c for c in document.courses if c.code in wanted]
+        if not chosen:
+            notices.append(("error", "None of the courses you listed are in the document."))
+            return None
+        return ParseResult(chosen, document.warnings)
+
+    required = [c for c in document.courses if not c.elective]
+    optional = len(document.courses) - len(required)
+    if len(required) > MAX_COURSES_WITHOUT_LIST:
+        notices.append(
+            (
+                "error",
+                f"This document lists {len(required)} courses, which is more than one "
+                "programme needs. It may be a catalogue or cover several majors. Type the "
+                "course codes you plan to take under 'Only plan these courses' and press "
+                "'Build my plan' again.",
+            )
+        )
+        return None
+    if optional:
+        notices.append(
+            (
+                "info",
+                f"{optional} course(s) in the document are electives or 'choose one' options, "
+                "so they were not scheduled. Add the ones you pick under 'Add an elective', or "
+                "list the courses you want under 'Only plan these courses'.",
+            )
+        )
+    return ParseResult(required, document.warnings)
+
+
 def reset_plan() -> None:
     ss.semesters = [list(s) for s in ss.gen.semesters]
     for code in ss.electives:
@@ -194,7 +251,8 @@ def add_elective() -> None:
             f"{code} is already in your requirements, electives or completed list.",
         )
         return
-    course = Course(
+    known = ss.get("choices", {}).get(code)
+    course = known or Course(
         code=code,
         title=ss.get("el_title", "").strip() or "Elective",
         credits=int(ss.get("el_credits", 6)),
@@ -206,7 +264,8 @@ def add_elective() -> None:
     ss.self_ratings.pop(code, None)
     ss.scores[code], ss.difficulty[code] = score, score.score
     ss.semesters = add_course(ss.semesters, code, ss.get("el_target", 0))
-    ss.flash = ("info", f"Added elective {code}. See the re-check below.")
+    source = " Its details came from your document." if known else ""
+    ss.flash = ("info", f"Added elective {code}.{source} See the re-check below.")
 
 
 def remove_elective() -> None:
@@ -281,12 +340,24 @@ def render_input() -> None:
         key="completed_text",
         height=80,
     )
+    st.text_area(
+        "Only plan these courses (optional)",
+        placeholder="e.g. HIST1001, HIST2001. Leave empty to plan the required courses.",
+        help="Use this when your document lists many courses to choose from, such as a "
+        "catalogue or several majors.",
+        key="only_text",
+        height=80,
+    )
     st.button("Build my plan", type="primary", on_click=build_plan)
 
 
 def render_notices() -> None:
     for level, text in ss.get("notices", []):
         notify(level, text)
+    if more := ss.get("more_warnings"):
+        with st.expander(f"{len(more)} more note(s) about this document"):
+            for text in more:
+                st.markdown(f"- ⚠️ **Warning:** {text}")
 
 
 def render_results(constraints: PlanConstraints) -> None:

@@ -57,6 +57,7 @@ def result_to_json(result: ParseResult) -> str:
                     "credits": c.credits,
                     "prerequisites": [list(g) for g in c.prerequisites],
                     "assessments": c.assessments,
+                    "elective": c.elective,
                 }
                 for c in result.courses
             ],
@@ -75,6 +76,7 @@ def result_from_json(text: str) -> ParseResult:
                 credits=c["credits"],
                 prerequisites=tuple(tuple(g) for g in c["prerequisites"]),
                 assessments=c["assessments"],
+                elective=c.get("elective", False),
             )
             for c in data["courses"]
         ],
