@@ -92,7 +92,20 @@ and BA syllabuses, which differ a lot: see "Known limitations" for what still ne
   `Non-permissible combination` and placeholder codes such as `XXXX2002` are never prerequisites.
 - Assessment percentages (`50% coursework, 50% examination`) are counted as two components.
 
-To check your own PDFs: `COURSE_PLANNER_REAL_SYLLABI=<folder> python -m pytest tests/test_real_syllabi.py`.
+**Trying another syllabus.** Run the report on any PDF, text or CSV file, or a whole folder
+(it runs locally and stores nothing):
+
+```bash
+python -m course_planner.syllabus_report path/to/syllabus.pdf
+python -m course_planner.syllabus_report path/to/folder --all     # list every course
+```
+
+It prints how many courses were found (required vs elective), how many have credits,
+prerequisites and assessments, the parser warnings, anything that looks wrong ("CHECK THESE":
+no courses, many courses without credits, paragraph-length titles) and a sample of courses
+to compare with the PDF. Then upload the same file in the app to see the plan. For a pass/fail
+version, `COURSE_PLANNER_REAL_SYLLABI=<folder> python -m pytest tests/test_real_syllabi.py`
+(use a folder that contains only syllabuses).
 
 ## Reproducible sample
 
