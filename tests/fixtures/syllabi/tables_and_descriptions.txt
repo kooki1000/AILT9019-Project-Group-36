@@ -1,0 +1,49 @@
+SYLLABUS FOR THE DEGREE OF BACHELOR OF ENGINEERING IN
+COMPUTER SCIENCE [BEng(CompSc)] (constructed test document, fictional)
+Foundation Courses (18 credits)
+Course Code Course No. of credits
+COMP1117 Computer programming 6
+COMP2113 Programming technologies 6
+COMP2120 Computer organization 6
+Disciplinary Core Courses (18 credits)
+Advanced Courses (18 credits)
+Course Code Course No. of credits
+COMP3230 Principles of operating systems 6
+COMP3251 / Algorithm design / 6
+COMP3252 Algorithm design and analysis
+COMP3297 Software engineering 6
+Disciplinary Elective Courses (12 credits, to be chosen from the following list)
+Course Code Course No. of credits
+COMP3234 Computer and communication networks # 6
+COMP3270 Introduction to artificial intelligence 6
+# If students choose COMP3234 to fulfil the requirement of Disciplinary Core Courses,
+COMP3234 will not be counted towards the category of Disciplinary Elective Courses.
+Focus
+Students may choose to claim the following Focus.
+[AI]
+- COMP3270 Introduction to artificial intelligence
+- COMP3340 Introduction to deep learning
+MINOR IN COMPUTER SCIENCE
+Course Code Course No. of credits
+COMP4999 Minor only course 6
+COMP1117. Computer programming (6 credits)
+This is an introductory course in programming.
+COMP2113 will build on this course.
+Mutually exclusive with: ENGG1111 or ENGG1330
+Assessment: 50% continuous assessment, 50% examination
+__________________________________________________________________
+COMP2113. Programming technologies (6 credits)
+This course covers intermediate programming topics.
+Prerequisite: COMP1117 or ENGG1330
+Mutually exclusive with: ENGG1340 or COMP2123
+Assessment: 70% continuous assessment, 30% examination
+12
+COMP3230. Principles of operating
+systems (6 credits)
+Operating system design and implementation.
+Prerequisites: COMP2113 or COMP2123; and COMP2120 or
+ELEC2441
+Assessment: 100% continuous assessment
+COMP3340. Introduction to deep learning (6 credits)
+Prerequisite: COMP2119 (Grade B or above) or special approval by instructor
+Assessment: 50% continuous assessment, 50% examination

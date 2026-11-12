@@ -30,6 +30,10 @@ JSON, for example:
  "warnings": ["COMP3314: credits were not found in the document."]}
 ```
 
+`elective` is true for courses the student chooses from a list ("electives", "choose one of",
+courses that appear only in a catalogue of a document that also has requirement tables); false
+means required, or that the document does not say.
+
 `prerequisites` is an AND of OR-groups: every inner list needs at least one of its courses
 completed. The example reads "COMP1117 and (MATH1013 or MATH1853)".
 

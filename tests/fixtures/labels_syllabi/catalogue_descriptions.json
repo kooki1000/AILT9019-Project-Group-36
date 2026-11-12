@@ -1,0 +1,6 @@
+{
+  "HIST1001": {"credits": 6, "assessments": 2, "prerequisites": []},
+  "HIST1002": {"credits": 6, "assessments": 1, "prerequisites": []},
+  "HIST2001": {"credits": 6, "assessments": 2, "prerequisites": [["HIST1001"], ["HIST1002", "HIST1003"]]},
+  "HIST3001": {"credits": 6, "assessments": 1, "prerequisites": []}
+}

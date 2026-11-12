@@ -1,0 +1,12 @@
+{
+  "COMP1117": {"credits": 6, "assessments": 2, "prerequisites": []},
+  "COMP2113": {"credits": 6, "assessments": 2, "prerequisites": [["COMP1117", "ENGG1330"]]},
+  "COMP2120": {"credits": 6, "prerequisites": []},
+  "COMP3230": {"credits": 6, "assessments": 1, "prerequisites": [["COMP2113", "COMP2123"], ["COMP2120", "ELEC2441"]]},
+  "COMP3251": {"credits": 6, "prerequisites": []},
+  "COMP3252": {"credits": 6, "prerequisites": []},
+  "COMP3297": {"credits": 6, "prerequisites": []},
+  "COMP3234": {"credits": 6, "prerequisites": []},
+  "COMP3270": {"credits": 6, "prerequisites": []},
+  "COMP3340": {"credits": 6, "assessments": 2, "prerequisites": [["COMP2119"]]}
+}
