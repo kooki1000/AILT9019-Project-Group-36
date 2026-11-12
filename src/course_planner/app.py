@@ -23,6 +23,7 @@ from course_planner.editing import (
     remove_course,
     summarise,
 )
+from course_planner.export import plan_to_csv
 from course_planner.intake import read_document
 from course_planner.metrics import compare_to_baseline
 from course_planner.models import Course, ParseResult
@@ -322,6 +323,12 @@ def render_results(constraints: PlanConstraints) -> None:
         st.write("No courses are scheduled.")
 
     render_evenness()
+    st.download_button(
+        "Download plan as CSV",
+        plan_to_csv(ss.semesters, catalog, ss.scores, list(ss.electives)),
+        file_name="course_plan.csv",
+        mime="text/csv",
+    )
     render_adjust(catalog, constraints)
 
 

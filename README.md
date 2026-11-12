@@ -60,6 +60,9 @@ The difficulty score also reads prepared review rows from a local dataset
 your own prepared dataset. Without a dataset the score uses the requirement
 document only.
 
+**Download plan as CSV** exports the current plan (including any manual edits and
+electives) with semester, course, credits, difficulty and the basis of each score.
+
 ## Reproducible sample
 
 With the bundled requirement document, bundled demonstration review CSV and
