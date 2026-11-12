@@ -197,6 +197,28 @@ one-line courses were read twice (inflating assessment counts and inventing extr
 prerequisite groups), section headings such as "Core courses and electives" were
 counted as assessments, and a CSV header like `Pre-requisites` was not recognised.
 
+## Parser as an agent skill (Claude and ChatGPT)
+
+`skills/parse-requirements/` packages the document parser in the open Agent Skills
+format (`SKILL.md` with `name` and `description`, plus a `scripts/` folder), which both
+Claude and ChatGPT/Codex document. It prints courses, prerequisites and warnings as JSON.
+
+Build a self-contained upload (it bundles the parser modules, so nothing needs installing):
+
+```bash
+python skills/build_skill.py        # writes dist/parse-requirements.zip
+```
+
+- **Claude:** upload the zip under Customize > Skills on claude.ai (a paid plan with code
+  execution is required), or unzip the folder into `~/.claude/skills/` for Claude Code.
+  Claude requires the skill folder at the top level of the zip, which the builder does.
+- **ChatGPT / Codex:** the same folder follows OpenAI's documented skill layout. OpenAI's
+  public docs do not describe a zip upload or whether ChatGPT can run scripts, so this
+  has **not been tested in ChatGPT**; if scripts cannot run there, the instructions still
+  explain the output format.
+- Plain text and CSV need no packages. PDF needs `pdfplumber` in the sandbox, which we
+  have not confirmed is available in either product.
+
 ## Known limitations
 
 - The 95% parsing target is met only on constructed documents written by the team.
