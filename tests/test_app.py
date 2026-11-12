@@ -194,6 +194,22 @@ def test_saved_documents_can_be_deleted_from_the_app(built):
     assert "Deleted 1 saved document(s)" in text(built)
 
 
+def test_own_rating_replaces_the_estimate_and_can_be_removed(built):
+    before = {r["Course"]: r["Difficulty (1-10)"] for r in built.table[0].value.to_dict("records")}
+    code = built.table[0].value["Course"].iloc[0]
+    built.selectbox(key="rate_code").set_value(code)
+    built.number_input(key="rate_value").set_value(9.5)
+    built = click(built, "Use my rating")
+    assert not built.exception
+    row = next(r for t in built.table for _, r in t.value.iterrows() if r["Course"] == code)
+    assert row["Difficulty (1-10)"] == "9.5" and "Your own rating" in row["Basis"]
+
+    built.selectbox(key="rate_clear").set_value(code)
+    built = click(built, "Remove my rating")
+    row = next(r for t in built.table for _, r in t.value.iterrows() if r["Course"] == code)
+    assert row["Difficulty (1-10)"] == before[code] and "Your own rating" not in row["Basis"]
+
+
 def test_reviews_behind_scores_are_shown_with_original_text(app, monkeypatch):
     monkeypatch.setenv("COURSE_PLANNER_REVIEWS", str(REVIEWS_SAMPLE))
     at = click(app, "Build my plan")

@@ -67,6 +67,10 @@ whether it was used in the score, so any difficulty number can be traced back.
 **Download plan as CSV** exports the current plan (including any manual edits and
 electives) with semester, course, credits, difficulty and the basis of each score.
 
+Under **Adjust your plan** you can also give a course your own 1-10 difficulty
+rating. It replaces the estimate for that course (marked "Your own rating") and
+the plan's totals and evenness are recalculated; you can remove it again.
+
 ## Reproducible sample
 
 With the bundled requirement document, bundled demonstration review CSV and
