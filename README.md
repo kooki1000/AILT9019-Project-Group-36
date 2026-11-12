@@ -60,6 +60,10 @@ The difficulty score also reads prepared review rows from a local dataset
 your own prepared dataset. Without a dataset the score uses the requirement
 document only.
 
+After building a plan, the **Student reviews behind each score** panel lists every
+review for the planned courses: rating, original text, English translation and
+whether it was used in the score, so any difficulty number can be traced back.
+
 ## Reproducible sample
 
 With the bundled requirement document, bundled demonstration review CSV and
