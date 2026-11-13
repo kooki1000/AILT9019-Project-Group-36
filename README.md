@@ -1,6 +1,4 @@
-# HKU Course Planner
-
-AILT9019 project, Group 36.
+# AILT9019 Project – Group 36: HKU Course Planner
 
 HKU publishes what each programme requires, but not when to take it or how heavy a
 semester will feel. Students usually work that out from memory, a spreadsheet or a short
@@ -56,7 +54,9 @@ semester limits or the review file can change the result.
 
 ## Using the app
 
-**1. Give it your requirement document.** Upload a PDF, plain text or CSV file, or paste
+### 1. Give it your requirement document
+
+ Upload a PDF, plain text or CSV file, or paste
 the text. Anything else is refused with a message saying so. Two optional boxes help when
 the document is not a simple list:
 
@@ -72,7 +72,9 @@ build. The first degree is read by default. Pick another and press **Build my pl
 The sidebar sets the limits: credits per semester (24 by default), courses per semester (5)
 and the number of semesters (8). It also has the button that deletes your saved documents.
 
-**2. Read the draft plan.** Each semester shows its courses, credits and total difficulty,
+### 2. Read the draft plan
+
+Each semester shows its courses, credits and total difficulty,
 with a note on how each score was reached ("Document only (no reviews)", "Past student
 reviews (4)" or "Your own rating"). Problems are listed in words with an icon, never by
 colour alone. If a course cannot be scheduled the app says which one and why, for example a
@@ -83,21 +85,27 @@ A line under the plan compares how evenly your semesters are loaded with taking 
 in the order the document lists them. The **Student reviews behind each score** panel lists
 the reviews used, with the original wording next to the English text.
 
-**3. Adjust it.** Under *Adjust your plan* you can move a course to another semester or a
+### 3. Adjust it
+
+Under *Adjust your plan* you can move a course to another semester or a
 new one, add an elective, give a course your own difficulty rating (it replaces the
 estimate), and reset to the suggested plan. The app never refuses a move. It re-checks
 prerequisites and load after every change and shows the problems, so you can try something
 and see what it breaks. **Download plan as CSV** saves the current plan, including your
 edits.
 
-Electives are handled separately. Syllabuses contain elective lists and "choose one of"
-options, and a student takes only some of them, so the app plans the required courses and
-tells you how many it left out. To bring one in, add it under *Add an elective* by its code.
-If the document describes it, its title, credits and prerequisites are filled in for you.
+### Electives
+
+Syllabuses contain elective lists and "choose one of" options, and a student takes only
+some of them. So the app plans the required courses and tells you how many it left out. To
+bring one in, add it under *Add an elective* by its code. If the document describes it, its
+title, credits and prerequisites are filled in for you.
 
 ## How the plan and the difficulty score work
 
-**The score.** Each course gets a number from 1 (light) to 10 (heavy) from three inputs:
+### The difficulty score
+
+Each course gets a number from 1 (light) to 10 (heavy) from three inputs:
 
 | Input | Weight | How it is turned into a 0 to 1 value |
 | ----- | ------ | ------------------------------------ |
@@ -119,10 +127,12 @@ you can check where a number came from.
 The score is a rough estimate built from past student reviews and what the document says.
 It is not an official HKU rating.
 
-**The plan.** The planner first checks which courses can ever be scheduled. Then it orders
-them by prerequisites and finds the fewest semesters that fit your limits. Within that
-length it moves courses around to even out the total difficulty per semester, measured as
-the variance of the semester totals. The comparison line in the app is that variance against
+### The plan
+
+The planner first checks which courses can ever be scheduled. Then it orders them by
+prerequisites and finds the fewest semesters that fit your limits. Within that length it
+moves courses around to even out the total difficulty per semester, measured as the
+variance of the semester totals. The comparison line in the app is that variance against
 the same courses taken in document order.
 
 ## Reading faculty syllabuses
@@ -137,7 +147,7 @@ mixed in one file:
   `Prerequisite:` and `Assessment:` lines;
 - plain course lists under headings such as "Core courses" or "Disciplinary Electives".
 
-What the parser decides, and how it says so:
+### What the parser decides, and how it says so
 
 - **Required or choice.** Courses in elective lists, "choose one of" groups and "Focus"
   lists are tagged as electives. So are courses that are only described in a document that
@@ -157,12 +167,16 @@ What the parser decides, and how it says so:
   in the document is also warned about, and its credits are left empty rather than guessed.
 - **Assessments** written as percentages (`50% coursework, 50% examination`) count as two.
 
+### Documents we have tried
+
 We tried it on eleven real 2025-26 and 2026-27 documents: BEcon, BEng (CompSc), BEng (DASE),
 BEng (CE, EE and ElecE), BA, BJ, BJ (MAI), BSocSc, LLB, BA & LLB, and the ENGG regulations.
 That last file is rules with no course list; the app recognises it and asks for the syllabus
 instead.
 
-**Trying another syllabus.** This reports how a file was read, locally, and stores nothing:
+### Trying another syllabus
+
+This reports how a file was read, locally, and stores nothing:
 
 ```bash
 python -m course_planner.syllabus_report path/to/syllabus.pdf
@@ -177,6 +191,8 @@ sample to compare against the PDF. A clean report is not proof, so look at a few
 yourself, then upload the same file in the app.
 
 ## Review data
+
+### File format
 
 The app reads reviews from one local CSV, `data/reviews/sample_reviews.csv` by default. That
 file is demonstration data and is not real RIC data. Set `COURSE_PLANNER_REVIEWS` to use a
@@ -194,13 +210,16 @@ course_code,text,rating,translation
   `translation` already filled in, otherwise it is left out.
 - After a build, the app says how many reviews it loaded and how many it left out.
 
+### Before adding real reviews
+
 Before real review data goes into the repository, the team has to confirm that collecting
 and reusing it is allowed, remove personal identifiers, and make sure no account details or
 other private information are included.
 
-**Preparing a translated dataset (team only).** You do not need this to run the app, which
-never translates anything and needs no model or API key. Chinese reviews can be translated
-once, when the dataset is built:
+### Preparing a translated dataset (team only)
+
+You do not need this to run the app, which never translates anything and needs no model or
+API key. Chinese reviews can be translated once, when the dataset is built:
 
 1. Install the optional dependencies and download the `Helsinki-NLP/opus-mt-zh-en` model.
    This needs internet and can take from hundreds of MB to a few GB. Translation then runs
@@ -231,13 +250,17 @@ model download use the internet.
 
 ## Development and testing
 
+### Running the tests
+
 ```bash
 python -m pytest -q                              # everything, including the Streamlit tests
 python -m pytest -q --ignore=tests/test_app.py   # without the browser-style app tests
 python -m ruff check .                           # lint
 ```
 
-**Plan check.** This runs the proposal's test on a folder of requirement documents. Every
+### Plan check
+
+This runs the proposal's test on a folder of requirement documents. Every
 plan must contain each required course once, respect prerequisites and stay within the load
 limit, and be more even than document order in at least 4 of 5 cases:
 
@@ -248,7 +271,9 @@ python -m course_planner.evaluation tests/fixtures/requirements
 On the five constructed fixtures it gives 5 of 5 legal plans and 4 of 5 more even than the
 baseline, so it passes. It uses document-only scores and says nothing about the reviews.
 
-**Parsing check.** The proposal counts parsing as done when at least 95% of courses and
+### Parsing check
+
+The proposal counts parsing as done when at least 95% of courses and
 prerequisite links are extracted correctly. Each document in `tests/fixtures/labels/` has a
 hand-written label file with its courses, credits, assessment counts and prerequisite
 groups, and the checker compares the parser against it:
@@ -267,7 +292,9 @@ the sample and two harder layouts. The second covers fictional documents built t
 structure of the real syllabuses. The tests also push the text documents through the PDF
 path.
 
-Those figures are for documents we wrote, so they show the parser handles those layouts,
+### Real syllabuses
+
+The figures above are for documents we wrote, so they show the parser handles those layouts,
 not how well it does on any real faculty file. For real files there are no labels. Instead,
 `tests/test_real_syllabi.py` checks that nothing looks wrong (no paragraph read as a title,
 no course missing a warning for missing credits, no duplicate or placeholder codes). It
@@ -300,6 +327,8 @@ The zip carries its own copy of the parser modules, so nothing needs installing.
 
 ## Status and known limitations
 
+### Proposal items
+
 Must-have items from the proposal:
 
 | Item | Status |
@@ -314,6 +343,8 @@ Must-have items from the proposal:
 
 Should-have items: CSV export, self-reported difficulty ratings and the skill file are
 built. A second review source and the study with HKU students are not.
+
+### Known limitations
 
 What to keep in mind when reading a plan:
 
