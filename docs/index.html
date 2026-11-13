@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HKU Course Planner</title>
+<meta name="description" content="A local app that reads an HKU programme's requirement document and drafts a semester-by-semester plan with the difficulty spread evenly. AILT9019 Group 36.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2314231C'/%3E%3Crect x='5' y='5' width='10' height='14' fill='%23EAF4D8'/%3E%3Crect x='17' y='5' width='10' height='9' fill='%236FB58A'/%3E%3Crect x='5' y='21' width='10' height='6' fill='%236FB58A'/%3E%3Crect x='17' y='16' width='10' height='11' fill='%230D4F38' stroke='%23EAF4D8'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #EDF0EC;
+  --panel: #F8FAF7;
+  --ink: #14231C;
+  --muted: #4B5B53;
+  --rule: #BCC7BF;
+  --plan: #0D4F38;
+  --baseline: #A06A00;
+  --ok: #1B6B44;
+  --bad: #A8301E;
+  --ramp-lo: #EAF4D8;
+  --ramp-mid: #6FB58A;
+  --ramp-hi: #0D4F38;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --text: "Source Serif 4", Georgia, "Times New Roman", serif;
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0F1A15;
+    --panel: #15241D;
+    --ink: #E6EEE8;
+    --muted: #9DB0A5;
+    --rule: #2E4338;
+    --plan: #6FB58A;
+    --baseline: #E2A92B;
+    --ok: #6FC794;
+    --bad: #FF8E7A;
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: 1.125rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--baseline); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: var(--paper); padding: 8px 12px; z-index: 10; }
+.skip:focus { left: 8px; }
+
+/* Top bar */
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; padding: 20px 0; font-family: var(--display); font-size: 0.95rem; }
+.top .name { font-weight: 800; font-stretch: 112%; letter-spacing: -0.01em; text-decoration: none; }
+.top nav { display: flex; gap: 22px; flex-wrap: wrap; }
+.top nav a { text-decoration: none; font-weight: 500; }
+.top nav a:hover { text-decoration: underline; }
+
+/* Hero */
+.hero { padding: clamp(24px, 4vw, 48px) 0 clamp(28px, 4vw, 48px); }
+h1 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-stretch: 122%;
+  font-size: clamp(2.2rem, 5.6vw, 4.6rem);
+  line-height: 0.96;
+  letter-spacing: -0.025em;
+  margin: 0 0 24px;
+  max-width: 22ch;
+  text-wrap: balance;
+}
+h1 span { display: block; }
+.lede { font-size: clamp(1.15rem, 2vw, 1.4rem); line-height: 1.5; max-width: 40em; margin: 0 0 28px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn {
+  font-family: var(--display); font-weight: 700; font-size: 1rem;
+  display: inline-block; padding: 12px 20px; text-decoration: none;
+  border: 2px solid var(--ink); border-radius: 2px;
+}
+.btn.solid { background: var(--ink); color: var(--paper); }
+.btn.solid:hover { background: var(--plan); border-color: var(--plan); }
+.btn.line:hover { background: var(--ink); color: var(--paper); }
+
+/* Board */
+.board-wrap { margin: clamp(28px, 4vw, 48px) 0 0; }
+.board-intro { max-width: 46em; margin: 0 0 20px; }
+.board-intro p { margin: 0 0 8px; }
+.controls { display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: end; margin-bottom: 14px; font-family: var(--display); }
+.seg { display: inline-flex; border: 2px solid var(--ink); border-radius: 2px; }
+.seg button { font: inherit; font-weight: 700; font-size: 0.95rem; padding: 9px 16px; background: transparent; color: var(--ink); border: 0; cursor: pointer; }
+.seg button + button { border-left: 2px solid var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.linkbtn { font: inherit; font-size: 0.95rem; font-weight: 600; background: none; border: 0; color: var(--ink); text-decoration: underline; cursor: pointer; padding: 9px 4px; }
+.readout { display: flex; gap: 28px; flex-wrap: wrap; margin-left: auto; }
+.readout div { display: flex; flex-direction: column; }
+.readout .k { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+.readout .v { font-size: 2rem; font-weight: 800; font-stretch: 112%; line-height: 1; font-variant-numeric: tabular-nums; }
+.readout .base .v { color: var(--baseline); }
+.readout .mine .v { color: var(--plan); }
+
+.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); border: 2px solid var(--ink); background: var(--panel); }
+.col { display: flex; flex-direction: column; min-width: 0; }
+.col { border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.col h3 { margin: 0; padding: 10px 12px; background: var(--ink); color: var(--paper); font-family: var(--display); font-size: 0.95rem; font-weight: 700; font-stretch: 105%; display: flex; justify-content: space-between; gap: 8px; }
+.col h3 { flex-wrap: wrap; }
+.col h3 span:first-child { white-space: nowrap; }
+.col h3 .sum { font-weight: 500; font-variant-numeric: tabular-nums; }
+.stack { display: flex; flex-direction: column; gap: 6px; padding: 8px; flex: 1; min-height: 120px; }
+.tile {
+  font-family: var(--display); text-align: left; width: 100%;
+  border: 1px solid rgba(20, 35, 28, 0.35); border-radius: 2px;
+  padding: 7px 9px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 0 8px; align-items: start;
+  color: var(--ink);
+}
+.tile .code { font-weight: 800; font-size: 0.98rem; letter-spacing: 0.01em; }
+.tile .num { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
+.tile .title { grid-column: 1 / -1; font-size: 0.8rem; font-weight: 400; font-stretch: 90%; line-height: 1.25; margin-top: 2px; }
+.tile.light { color: #14231C; }
+.tile.dark { color: #F4F8F2; border-color: rgba(255, 255, 255, 0.4); }
+.tile[aria-pressed="true"] { outline: 3px solid var(--baseline); outline-offset: 1px; }
+.tile.bad { box-shadow: inset 5px 0 0 var(--bad); }
+.tile.bad .num::before { content: "! "; }
+.dropbtn { font-family: var(--display); font-weight: 700; font-size: 0.88rem; margin: 0 8px 8px; padding: 9px 10px; background: transparent; color: var(--ink); border: 2px dashed var(--baseline); border-radius: 2px; cursor: pointer; text-align: left; }
+.dropbtn:hover { background: var(--baseline); color: #14231C; }
+.colfoot { font-family: var(--display); font-size: 0.82rem; color: var(--muted); padding: 8px 12px; border-top: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+.colfoot.over { color: var(--bad); font-weight: 700; }
+.status { margin-top: 14px; font-family: var(--display); font-size: 0.98rem; min-height: 3.2em; }
+.status ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.status li { display: flex; gap: 8px; align-items: baseline; }
+.status .tag { font-weight: 800; white-space: nowrap; }
+.status .ok { color: var(--ok); }
+.status .problem { color: var(--bad); }
+.legend { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; font-family: var(--display); font-size: 0.85rem; color: var(--muted); }
+.legend .ramp { width: 140px; height: 12px; border: 1px solid rgba(20,35,28,0.35); background: linear-gradient(90deg, var(--ramp-lo), var(--ramp-mid), var(--ramp-hi)); }
+.legend .note { flex-basis: 100%; max-width: 60em; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .board.entering .tile { animation: settle 520ms cubic-bezier(.2,.8,.2,1) backwards; animation-delay: calc(var(--i) * 55ms); }
+  @keyframes settle { from { transform: translateY(-34px); opacity: 0; } to { transform: none; opacity: 1; } }
+}
+
+/* Sections */
+section.block { border-top: 2px solid var(--ink); padding: clamp(32px, 5vw, 56px) 0; margin-top: clamp(40px, 6vw, 72px); display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+@media (min-width: 900px) { section.block { grid-template-columns: 250px minmax(0, 1fr); gap: 56px; } }
+section.block > h2 {
+  font-family: var(--display); font-weight: 800; font-stretch: 112%;
+  font-size: clamp(1.5rem, 2.4vw, 1.9rem); line-height: 1.1; letter-spacing: -0.015em; margin: 0;
+  align-self: start;
+}
+@media (min-width: 900px) { section.block > h2 { position: sticky; top: 24px; } }
+.prose { max-width: 40em; }
+.prose p { margin: 0 0 1.1em; }
+.prose h3 { font-family: var(--display); font-weight: 700; font-size: 1.15rem; margin: 1.8em 0 0.4em; }
+.prose ul { padding-left: 1.2em; margin: 0 0 1.1em; }
+.prose li { margin-bottom: 0.55em; }
+.wide { max-width: none; }
+code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.9em; }
+:not(pre) > code { background: rgba(127,150,135,0.2); padding: 1px 5px; border-radius: 2px; }
+
+.split { display: grid; gap: 28px; grid-template-columns: 1fr; margin: 1.4em 0; }
+@media (min-width: 640px) { .split { grid-template-columns: 1fr 1fr; } }
+.split h3 { margin: 0 0 0.4em; font-family: var(--display); font-size: 1.1rem; }
+.split p { margin: 0; }
+
+/* Steps */
+.steps { list-style: none; counter-reset: step; margin: 0; padding: 0; }
+.steps > li { counter-increment: step; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 0 16px; padding: 0 0 36px; position: relative; }
+.steps > li::before { content: counter(step); font-family: var(--display); font-weight: 800; font-stretch: 120%; font-size: 2.6rem; line-height: 1; color: var(--plan); }
+.steps > li:not(:last-child)::after { content: ""; position: absolute; left: 14px; top: 3.2rem; bottom: 10px; width: 2px; background: var(--rule); }
+.steps h3 { font-family: var(--display); font-size: 1.25rem; font-weight: 800; margin: 0 0 6px; line-height: 1.2; }
+.steps p { margin: 0 0 0.7em; max-width: 38em; }
+
+/* Calculator */
+.calc { border: 2px solid var(--ink); background: var(--panel); padding: 20px; margin: 18px 0 8px; display: grid; gap: 22px; max-width: 40em; }
+@media (min-width: 700px) { .calc { grid-template-columns: 1fr 190px; align-items: center; } }
+.calc fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 14px; }
+.calc legend { font-family: var(--display); font-weight: 800; margin-bottom: 8px; padding: 0; }
+.calc label { font-family: var(--display); font-size: 0.95rem; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.calc label output { font-weight: 800; font-variant-numeric: tabular-nums; }
+.calc input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--plan); }
+.calc .check { display: flex; gap: 8px; align-items: center; grid-template-columns: none; }
+.calc .result { font-family: var(--display); text-align: left; }
+.calc .big { font-size: 4.2rem; font-weight: 800; font-stretch: 118%; line-height: 1; font-variant-numeric: tabular-nums; }
+.calc .of { font-size: 1rem; color: var(--muted); }
+.parts { display: grid; gap: 6px; margin-top: 12px; }
+.parts div { display: grid; grid-template-columns: 74px 1fr 38px; gap: 8px; align-items: center; font-size: 0.82rem; }
+.parts i { display: block; height: 8px; background: var(--plan); }
+.parts span:last-child { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Figures */
+.figs { display: grid; gap: 28px; grid-template-columns: 1fr; margin: 24px 0; }
+@media (min-width: 760px) { .figs { grid-template-columns: 1fr 1fr; align-items: start; } }
+figure { margin: 0; }
+.shot { border: 2px solid var(--ink); background: #fff; max-height: 560px; overflow: auto; }
+.shot img { display: block; width: 100%; height: auto; }
+figcaption { font-size: 0.98rem; color: var(--muted); margin-top: 10px; max-width: 34em; }
+.success { margin: 0 0 1.2em; padding: 0; list-style: none; }
+.success li { display: grid; grid-template-columns: 1.6em 1fr; margin-bottom: 0.4em; }
+.success li::before { content: "\2713"; color: var(--ok); font-family: var(--display); font-weight: 800; }
+
+/* Code */
+.codebox { position: relative; background: var(--ink); color: var(--paper); border-radius: 2px; margin: 0 0 1.2em; }
+.codebox pre { margin: 0; padding: 18px 20px; overflow-x: auto; line-height: 1.7; font-size: 0.92rem; }
+.codebox button { position: absolute; top: 8px; right: 8px; font-family: var(--display); font-size: 0.8rem; font-weight: 700; padding: 5px 10px; background: var(--paper); color: var(--ink); border: 0; border-radius: 2px; cursor: pointer; }
+:root[data-theme="dark"] .codebox, :root:not([data-theme="light"]) .codebox { }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .codebox { background: #08110D; color: #E6EEE8; border: 1px solid var(--rule); } :root:not([data-theme="light"]) .codebox button { background: #E6EEE8; color: #14231C; } }
+
+/* Evidence */
+.facts { display: grid; gap: 0; margin: 0 0 28px; border-top: 1px solid var(--rule); }
+.fact { display: grid; grid-template-columns: 1fr; gap: 4px 24px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
+@media (min-width: 700px) { .fact { grid-template-columns: 210px 1fr; } }
+.fact .what { font-family: var(--display); font-weight: 800; line-height: 1.25; }
+.fact .what small { display: block; font-weight: 500; color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
+.fact p { margin: 0; }
+.chart { margin: 8px 0 6px; font-family: var(--display); max-width: 44em; }
+.chart .row { display: grid; grid-template-columns: 150px 1fr; gap: 6px 14px; padding: 8px 0; border-bottom: 1px solid var(--rule); align-items: center; }
+@media (max-width: 560px) { .chart .row { grid-template-columns: 1fr; } }
+.chart .name { font-size: 0.92rem; font-weight: 600; line-height: 1.25; }
+.chart .bars { display: grid; gap: 4px; }
+.chart .bar { display: grid; grid-template-columns: minmax(0, 1fr) 54px; gap: 8px; align-items: center; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.chart .bar i { display: block; height: 12px; min-width: 3px; }
+.chart .b i { background: var(--baseline); }
+.chart .p i { background: var(--plan); }
+.chart .bar span { text-align: right; }
+.chart .keys { display: flex; gap: 18px; font-size: 0.85rem; margin-bottom: 6px; color: var(--muted); }
+.chart .keys b { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-right: 6px; }
+
+.vidslot[hidden] { display: none; }
+.vidslot iframe { width: 100%; aspect-ratio: 16 / 9; border: 2px solid var(--ink); }
+
+footer { border-top: 2px solid var(--ink); margin-top: clamp(40px, 6vw, 72px); padding: 32px 0 56px; font-family: var(--display); font-size: 0.95rem; display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: space-between; }
+footer p { margin: 0; max-width: 40em; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header class="top">
+    <a class="name" href="#top">HKU Course Planner</a>
+    <nav aria-label="Page sections">
+      <a href="#how">How it works</a>
+      <a href="#run">See it run</a>
+      <a href="#local">Run it yourself</a>
+      <a href="#evidence">Does it work?</a>
+      <a href="#limits">Limits</a>
+      <a href="https://github.com/kooki1000/AILT9019-Project-Group-36">Source code</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <div class="hero" id="top">
+      <h1><span>What to take is published.</span> <span>When to take it isn't.</span></h1>
+      <p class="lede">HKU Course Planner reads your programme's requirement document and drafts a semester-by-semester plan, spread so no semester carries far more than the others. It runs on your own computer and sends nothing anywhere.</p>
+      <div class="actions">
+        <a class="btn solid" href="#local">Run it yourself</a>
+        <a class="btn line" href="https://github.com/kooki1000/AILT9019-Project-Group-36">Source code on GitHub</a>
+      </div>
+
+      <div class="board-wrap" id="board-wrap">
+        <div class="board-intro">
+          <p><strong>This is a real run, not a mock-up.</strong> Ten physics and maths courses from one of our test documents, at most 24 credits and 5 courses a semester. Compare our plan with taking courses in the order the document lists them, then select a course and move it. Like the app, the page never refuses a move. It tells you what broke.</p>
+        </div>
+        <noscript><p>The interactive plan needs JavaScript. The screenshots further down show the same app.</p></noscript>
+        <div class="controls">
+          <div class="seg" role="group" aria-label="Which plan to show">
+            <button type="button" id="show-plan" aria-pressed="true">Our plan</button>
+            <button type="button" id="show-base" aria-pressed="false">Document order</button>
+          </div>
+          <button type="button" class="linkbtn" id="reset">Reset my moves</button>
+          <div class="readout" aria-live="polite">
+            <div class="base"><span class="k">Document order spread</span><span class="v" id="v-base">–</span></div>
+            <div class="mine"><span class="k">Your current spread</span><span class="v" id="v-now">–</span></div>
+          </div>
+        </div>
+        <div class="board" id="board" aria-label="Semester plan"></div>
+        <div class="status" id="status" role="status" aria-live="polite"></div>
+        <div class="legend">
+          <span>Shade shows the 1 to 10 difficulty score:</span>
+          <span>lighter</span><span class="ramp" aria-hidden="true"></span><span>darker</span>
+          <span class="note">Spread is the variance of each semester's total difficulty, so lower means more even. Scores here come from the document alone, with no reviews, as in our evaluation run.</span>
+        </div>
+      </div>
+    </div>
+
+    <section class="block" id="problem" aria-labelledby="h-problem">
+      <h2 id="h-problem">The gap</h2>
+      <div class="prose">
+        <p>HKU publishes what each programme requires. It does not say when to take those courses, or how heavy a given semester will feel. Students fill the gap from memory, a spreadsheet or a short chat with an adviser, and too often learn a semester is overloaded after they have enrolled.</p>
+        <p>Programme pages tell you what to take. RIC tells you how hard a course feels. Nothing turns either one into a plan you can follow, and we could not find a tool that reads the requirements, brings in course reviews and spreads the courses by workload. This is our own idea, not adapted from the course topic list. It came out of planning problems we and other HKU undergraduates kept running into.</p>
+        <div class="split">
+          <div>
+            <h3>It is for</h3>
+            <p>Undergraduates who already know their programme and want a draft plan they can review and edit.</p>
+          </div>
+          <div>
+            <h3>It is not for</h3>
+            <p>Graduation audits, replacing an academic adviser, double majors, transfer credit or requirement waivers.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="how" aria-labelledby="h-how">
+      <h2 id="h-how">How it works</h2>
+      <div class="prose wide">
+        <ol class="steps">
+          <li>
+            <div>
+              <h3>It reads the requirement document</h3>
+              <p>Upload a PDF, plain text or CSV, or paste the text. The parser pulls out each course with its credits, assessments and prerequisites. It copes with four layouts, even mixed in one file: labelled blocks, table rows, course-description pages and plain lists under headings like "Core courses" or "Disciplinary Electives".</p>
+              <p>What it cannot check, such as a prerequisite written as "Level 2 in HKDSE Mathematics", becomes a visible warning. It is never dropped quietly or guessed.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>It looks up reviews from a local file</h3>
+              <p>Reviews come from a CSV that sits next to the app. The app never goes online for them and never asks for an RIC or HKU password. Chinese reviews are translated once, with an offline model, when the dataset is built. The app reads only the finished file, and keeps the original wording beside each translation.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>It scores each course from 1 to 10</h3>
+              <p>Credits count for 35%, graded assessments for 35% and reviews for 30%. Reviews are averaged with a trimmed mean, so one extreme rating neither decides the score nor gets thrown away. With no reviews, the other two weights are rescaled and the course is labelled review-free. This calculator uses the same formula as the app.</p>
+              <div class="calc" id="calc">
+                <fieldset>
+                  <legend>Try a course</legend>
+                  <label>Credits <output id="o-cr">6</output>
+                    <input type="range" id="i-cr" min="0" max="12" step="1" value="6"></label>
+                  <label>Graded assessments <output id="o-as">5</output>
+                    <input type="range" id="i-as" min="0" max="8" step="1" value="5"></label>
+                  <label>Average review rating, 1 hard to 5 easy <output id="o-rt">4.0</output>
+                    <input type="range" id="i-rt" min="1" max="5" step="0.5" value="4"></label>
+                  <label class="check"><input type="checkbox" id="i-none"> This course has no reviews</label>
+                </fieldset>
+                <div class="result" aria-live="polite">
+                  <div class="big" id="r-score">5.2</div>
+                  <div class="of" id="r-basis">out of 10, from past student reviews</div>
+                  <div class="parts" id="r-parts"></div>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>It builds the plan</h3>
+              <p>First it checks which courses can ever be scheduled: circular prerequisites, missing prerequisites and courses bigger than a semester are named, not skipped. Then it orders courses by prerequisites, finds the fewest semesters that fit your limits, and moves courses around inside that length to even out each semester's total difficulty. The result is compared with the document-order baseline you saw at the top.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>You adjust it, and every change is re-checked</h3>
+              <p>Move a course, add an elective, or give a course your own difficulty rating, which replaces the estimate. Prerequisites and load are checked again after each edit. The plan downloads as CSV.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="block" id="run" aria-labelledby="h-run">
+      <h2 id="h-run">See it run</h2>
+      <div class="prose wide">
+        <p>The app ships with a short, fictional Computer Science programme as its sample document. On a first run, pressing <strong>Build my plan</strong> should give you:</p>
+        <ul class="success">
+          <li>A note that it loaded 20 reviews covering all 7 courses.</li>
+          <li>A green banner saying every required course is scheduled once, in prerequisite order, within your limits.</li>
+          <li>Three semesters: COMP1117 and MATH1013; then COMP2113, COMP2119 and STAT2601; then COMP3230 and COMP3314.</li>
+        </ul>
+        <div class="vidslot" id="vidslot" hidden>
+          <h3>Recorded walkthrough</h3>
+          <div id="vidframe"></div>
+        </div>
+        <div class="figs">
+          <figure>
+            <div class="shot" tabindex="0" role="group" aria-label="Screenshot of the draft plan, scrollable">
+              <img src="assets/app-plan.png" width="1050" height="1974" alt="The app's draft plan: a green banner reading OK, then three semester tables listing courses, credits and difficulty scores.">
+            </div>
+            <figcaption>The sample run, as the app shows it. On this small programme the balanced plan and document order come out identical (5.58 and 5.58), and the app says "not more even" instead of claiming a win.</figcaption>
+          </figure>
+          <figure>
+            <div class="shot" tabindex="0" role="group" aria-label="Screenshot of a failure case, scrollable">
+              <img src="assets/app-cycle.png" width="1065" height="600" alt="The app showing two red problem messages: two courses could not be scheduled because they depend on each other. Only the unaffected course is placed, in Semester 1.">
+            </div>
+            <figcaption>A case it should refuse. In this test document EXAM2001 needs EXAM3001, and EXAM3001 needs EXAM2001. The app schedules what it can, names both courses and says why. It does not invent an order.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="local" aria-labelledby="h-local">
+      <h2 id="h-local">Run it yourself</h2>
+      <div class="prose wide">
+        <p>You need Python 3.10 or newer. There is no account, no API key and no database to set up.</p>
+        <div class="codebox">
+          <button type="button" data-copy="code-install">Copy</button>
+<pre id="code-install">git clone https://github.com/kooki1000/AILT9019-Project-Group-36.git
+cd AILT9019-Project-Group-36
+python3 -m venv .venv
+source .venv/bin/activate        # on Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+streamlit run src/course_planner/app.py</pre>
+        </div>
+        <p>The app opens in your browser. Leave <strong>Use the sample document</strong> selected and press <strong>Build my plan</strong>. To use your own programme, choose <strong>Upload a file</strong> and give it the faculty's syllabus PDF. If a PDF lists far more courses than one student takes, the app asks which ones you plan to take.</p>
+        <p>To check the install, run the tests, or see how the parser reads a syllabus without opening the app:</p>
+        <div class="codebox">
+          <button type="button" data-copy="code-test">Copy</button>
+<pre id="code-test">python -m pytest -q
+python -m course_planner.evaluation tests/fixtures/requirements
+python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
+        </div>
+        <p>The <a href="https://github.com/kooki1000/AILT9019-Project-Group-36#readme">README</a> covers the review file format, where your data is stored (a local SQLite file you can delete from inside the app) and the agent-skill version of the parser.</p>
+      </div>
+    </section>
+
+    <section class="block" id="evidence" aria-labelledby="h-evidence">
+      <h2 id="h-evidence">Does it work?</h2>
+      <div class="prose wide">
+        <p>Before testing we fixed what "works" means, and published it in the proposal. These are the results against that bar, including the part we cannot claim.</p>
+        <div class="facts">
+          <div class="fact">
+            <div class="what">Legal plans<small>5 of 5 test documents</small></div>
+            <p>Every required course appears exactly once, none comes before its prerequisite, and no semester goes over the limit. The proposal needed 4 of 5.</p>
+          </div>
+          <div class="fact">
+            <div class="what">More even than document order<small>4 of 5 test documents</small></div>
+            <p>The proposal needed 4 of 5. The one tie is the smallest document (6 courses), which has nothing to balance. The chart shows each plan's spread against the baseline's.</p>
+          </div>
+          <div class="fact">
+            <div class="what">Parsing accuracy<small>100% on our labelled documents</small></div>
+            <p>The bar was 95% of courses and prerequisite groups extracted correctly. These documents are ones we wrote, some shaped like real syllabuses, each with hand-written answers to compare against. That shows the layouts work. It says little about any given faculty's file.</p>
+          </div>
+          <div class="fact">
+            <div class="what">Real HKU syllabuses<small>eleven tried, no accuracy figure</small></div>
+            <p>BEcon, BEng (CompSc), BEng (DASE), BEng (CE, EE and ElecE), BA, BJ, BJ (MAI), BSocSc, LLB, BA &amp; LLB and the ENGG regulations. We checked the output against the PDFs and fixed what broke. There are no hand labels for these, so we do not report a percentage.</p>
+          </div>
+          <div class="fact">
+            <div class="what">Failing safely<small>two cases from the proposal</small></div>
+            <p>Circular prerequisites and courses that can never fit are reported in words, as in the screenshot above. A course with no reviews is scored from the document and marked review-free.</p>
+          </div>
+          <div class="fact">
+            <div class="what">Automated tests<small>over 350, all passing</small></div>
+            <p>They cover the parser, prerequisite logic, scoring, planner, CSV export and the Streamlit interface itself.</p>
+          </div>
+        </div>
+        <div class="chart" role="img" aria-label="Spread of semester difficulty for our plan and for document order, on five test documents. Our plan is lower on four.">
+          <div class="keys"><span><b style="background:var(--plan)"></b>Our plan</span><span><b style="background:var(--baseline)"></b>Document order</span></div>
+          <div id="chart"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="limits" aria-labelledby="h-limits">
+      <h2 id="h-limits">Where it falls short</h2>
+      <div class="prose">
+        <ul>
+          <li>The reviews in the repository are made-up demonstration data. Real RIC reviews need permission to collect and reuse, and we have not got that yet. Until then the difficulty score is built on invented ratings.</li>
+          <li>The score uses each review's 1 to 5 rating. It does not read the review text, and translation has not been tested on real colloquial Cantonese.</li>
+          <li>Most syllabuses list few or no prerequisites. BEcon lists none, so a plan can put a final-year course in semester 1. Treat the order as a starting point.</li>
+          <li>Catalogue-sized documents, such as the BA, can't be planned without your course list. Some options groups without a clear heading count as required.</li>
+          <li>Prerequisite checks cover course codes. Year standing, department approval and exam grades are reported, not enforced. Semester availability and timetable clashes are out of scope.</li>
+          <li>Not built: a second review source to cross-check RIC, and the small study with HKU students that the proposal listed as a stretch goal.</li>
+        </ul>
+        <p>The score is an estimate from past student reviews and the requirement document. It is not an official HKU rating, and the plan is not a graduation audit. Check it against the current programme rules and with an academic adviser.</p>
+        <h3>How it was built</h3>
+        <p>Most of the code was written with an AI coding assistant (Claude Code) and went through pull requests before merging. The report has the full AI-use disclosure. The repository holds no passwords, API keys or personal data, and the app keeps uploaded documents only on the machine running it.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>AILT9019 AI Literacy II, Group 36. The University of Hong Kong.</p>
+    <p><a href="https://github.com/kooki1000/AILT9019-Project-Group-36">Source code and README on GitHub</a></p>
+  </footer>
+</div>
+
+<script src="plan-data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- difficulty colour ---------- */
+  var LO = [234, 244, 216], MID = [111, 181, 138], HI = [13, 79, 56];
+  function mix(a, b, t) { return a.map(function (v, i) { return Math.round(v + (b[i] - v) * t); }); }
+  function shade(score) {
+    var t = Math.max(0, Math.min(1, (score - 3) / 4.5));
+    return t < 0.5 ? mix(LO, MID, t * 2) : mix(MID, HI, (t - 0.5) * 2);
+  }
+  function luminance(c) {
+    var f = c.map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+  }
+
+  /* ---------- the board ---------- */
+  var run = window.BALANCE_RUN;
+  var boardEl = document.getElementById("board");
+  if (run && boardEl) {
+    var byCode = {};
+    run.courses.forEach(function (c) { byCode[c.code] = c; });
+    var COLS = 5;
+    var mode = "plan", selected = null, state = null;
+
+    function fresh(which) {
+      var src = which === "plan" ? run.plan : run.baseline;
+      var out = [];
+      for (var i = 0; i < COLS; i++) out.push((src[i] || []).slice());
+      return out;
+    }
+    function variance(sems) {
+      var last = -1;
+      sems.forEach(function (s, i) { if (s.length) last = i; });
+      var loads = sems.slice(0, last + 1).map(function (s) {
+        return s.reduce(function (t, code) { return t + byCode[code].difficulty; }, 0);
+      });
+      if (!loads.length) return 0;
+      var mean = loads.reduce(function (a, b) { return a + b; }, 0) / loads.length;
+      return loads.reduce(function (t, l) { return t + (l - mean) * (l - mean); }, 0) / loads.length;
+    }
+    function semesterOf(code) {
+      for (var i = 0; i < state.length; i++) if (state[i].indexOf(code) !== -1) return i;
+      return -1;
+    }
+    function problems() {
+      var found = [], bad = {};
+      state.forEach(function (sem, i) {
+        sem.forEach(function (code) {
+          byCode[code].prerequisites.forEach(function (group) {
+            var met = group.some(function (p) { var s = semesterOf(p); return s !== -1 && s < i; });
+            if (!met) {
+              bad[code] = true;
+              found.push(code + " needs " + group.join(" or ") + " in an earlier semester.");
+            }
+          });
+        });
+        var credits = sem.reduce(function (t, c) { return t + byCode[c].credits; }, 0);
+        if (credits > run.limits.credits) found.push("Semester " + (i + 1) + " has " + credits + " credits; the limit is " + run.limits.credits + ".");
+        if (sem.length > run.limits.courses) found.push("Semester " + (i + 1) + " has " + sem.length + " courses; the limit is " + run.limits.courses + ".");
+      });
+      return { list: found, bad: bad };
+    }
+    function fmt(n) { return n.toFixed(2); }
+
+    function draw(animate) {
+      var check = problems();
+      boardEl.innerHTML = "";
+      boardEl.classList.toggle("entering", !!animate);
+      var order = 0;
+      state.forEach(function (sem, i) {
+        var col = document.createElement("div");
+        col.className = "col";
+        var credits = sem.reduce(function (t, c) { return t + byCode[c].credits; }, 0);
+        var load = sem.reduce(function (t, c) { return t + byCode[c].difficulty; }, 0);
+        var h = document.createElement("h3");
+        h.innerHTML = "<span>Semester " + (i + 1) + "</span><span class='sum'>" + (sem.length ? "load " + load.toFixed(1) : "empty") + "</span>";
+        col.appendChild(h);
+        var stack = document.createElement("div");
+        stack.className = "stack";
+        sem.forEach(function (code) {
+          var c = byCode[code], rgb = shade(c.difficulty);
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "tile " + (luminance(rgb) > 0.32 ? "light" : "dark") + (check.bad[code] ? " bad" : "");
+          b.style.background = "rgb(" + rgb.join(",") + ")";
+          b.style.minHeight = (34 + c.credits * 6) + "px";
+          b.style.setProperty("--i", order++);
+          b.setAttribute("aria-pressed", selected === code ? "true" : "false");
+          b.setAttribute("aria-label", code + ", " + c.title + ", " + c.credits + " credits, difficulty " + c.difficulty.toFixed(1) + (check.bad[code] ? ", prerequisite problem" : "") + ". Select to move.");
+          b.innerHTML = "<span class='code'>" + code + "</span><span class='num'>" + c.difficulty.toFixed(1) + "</span><span class='title'>" + c.title + " · " + c.credits + " cr</span>";
+          b.addEventListener("click", function () { selected = selected === code ? null : code; draw(false); });
+          stack.appendChild(b);
+        });
+        col.appendChild(stack);
+        if (selected && semesterOf(selected) !== i) {
+          var d = document.createElement("button");
+          d.type = "button";
+          d.className = "dropbtn";
+          d.textContent = "Move " + selected + " here";
+          d.addEventListener("click", function () {
+            var from = semesterOf(selected);
+            state[from].splice(state[from].indexOf(selected), 1);
+            state[i].push(selected);
+            var moved = selected;
+            selected = null;
+            draw(false);
+            var again = boardEl.querySelectorAll(".tile");
+            for (var k = 0; k < again.length; k++) if (again[k].getAttribute("aria-label").indexOf(moved + ",") === 0) { again[k].focus(); break; }
+          });
+          col.appendChild(d);
+        }
+        var foot = document.createElement("div");
+        foot.className = "colfoot" + (credits > run.limits.credits || sem.length > run.limits.courses ? " over" : "");
+        foot.textContent = credits + " credits, " + sem.length + " course" + (sem.length === 1 ? "" : "s");
+        col.appendChild(foot);
+        boardEl.appendChild(col);
+      });
+
+      document.getElementById("v-base").textContent = fmt(run.variance.baseline);
+      document.getElementById("v-now").textContent = fmt(variance(state));
+      var status = document.getElementById("status");
+      if (check.list.length) {
+        status.innerHTML = "<ul>" + check.list.map(function (m) { return "<li><span class='tag problem'>✕ Problem</span><span>" + m + "</span></li>"; }).join("") + "</ul>";
+      } else {
+        status.innerHTML = "<ul><li><span class='tag ok'>✓ OK</span><span>Every course is scheduled once, after its prerequisites, within the limits. " + (selected ? "Choose a semester to move " + selected + " to." : "Select a course to move it.") + "</span></li></ul>";
+      }
+    }
+
+    function show(which) {
+      mode = which;
+      selected = null;
+      state = fresh(which);
+      document.getElementById("show-plan").setAttribute("aria-pressed", which === "plan");
+      document.getElementById("show-base").setAttribute("aria-pressed", which === "base");
+      draw(true);
+    }
+    document.getElementById("show-plan").addEventListener("click", function () { show("plan"); });
+    document.getElementById("show-base").addEventListener("click", function () { show("base"); });
+    document.getElementById("reset").addEventListener("click", function () { show(mode); });
+    show("plan");
+  }
+
+  /* ---------- the score calculator (same formula as difficulty.py) ---------- */
+  var cr = document.getElementById("i-cr"), as = document.getElementById("i-as"),
+      rt = document.getElementById("i-rt"), none = document.getElementById("i-none");
+  function calc() {
+    var credits = +cr.value, assessments = +as.value, rating = +rt.value, noReviews = none.checked;
+    var cf = Math.min(credits / 12, 1), af = Math.min(assessments / 8, 1);
+    var sf = null, weighted;
+    if (noReviews) {
+      weighted = (0.35 * cf + 0.35 * af) / 0.70;
+    } else {
+      sf = (1 - (rating - 3) / 2) / 2;
+      weighted = 0.35 * cf + 0.35 * af + 0.30 * sf;
+    }
+    var score = 1 + 9 * weighted;
+    document.getElementById("o-cr").textContent = credits;
+    document.getElementById("o-as").textContent = assessments;
+    document.getElementById("o-rt").textContent = rating.toFixed(1);
+    rt.disabled = noReviews;
+    document.getElementById("r-score").textContent = score.toFixed(1);
+    document.getElementById("r-basis").textContent = noReviews ? "out of 10, document only (review-free)" : "out of 10, from past student reviews";
+    var parts = [["Credits", cf, noReviews ? 0.5 : 0.35], ["Assessments", af, noReviews ? 0.5 : 0.35]];
+    if (!noReviews) parts.push(["Reviews", sf, 0.30]);
+    document.getElementById("r-parts").innerHTML = parts.map(function (p) {
+      var pts = 9 * p[1] * p[2];
+      return "<div><span>" + p[0] + "</span><i style='width:" + Math.max(2, pts / 9 * 100 * 1.6) + "%'></i><span>+" + pts.toFixed(1) + "</span></div>";
+    }).join("");
+  }
+  [cr, as, rt, none].forEach(function (el) { el.addEventListener("input", calc); });
+  calc();
+
+  /* ---------- evidence chart (numbers from `python -m course_planner.evaluation`) ---------- */
+  var cases = [
+    ["Minor, 6 courses", 0.07, 0.07],
+    ["Major, 10 courses", 7.03, 48.89],
+    ["Business, 14 courses", 3.78, 27.27],
+    ["CS with alternatives, 18 courses", 3.90, 27.74],
+    ["Arts, deep chain, 24 courses", 1.22, 8.95]
+  ];
+  var top = 48.89;
+  document.getElementById("chart").innerHTML = cases.map(function (c) {
+    function bar(cls, v) { return "<div class='bar " + cls + "'><i style='width:" + Math.max(0.6, v / top * 100) + "%'></i><span>" + v.toFixed(2) + "</span></div>"; }
+    return "<div class='row'><div class='name'>" + c[0] + "</div><div class='bars'>" + bar("p", c[1]) + bar("b", c[2]) + "</div></div>";
+  }).join("");
+
+  /* ---------- copy buttons ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (btn) {
+    btn.addEventListener("click", function () {
+      var text = document.getElementById(btn.getAttribute("data-copy")).textContent;
+      try {
+        navigator.clipboard.writeText(text).then(function () {
+          btn.textContent = "Copied";
+          setTimeout(function () { btn.textContent = "Copy"; }, 1600);
+        });
+      } catch (e) { /* copying is a convenience; the text stays selectable */ }
+    });
+  });
+
+  /* ---------- optional demo video: set VIDEO_ID to an unlisted YouTube video id ---------- */
+  var VIDEO_ID = "";
+  if (VIDEO_ID) {
+    document.getElementById("vidframe").innerHTML = "<iframe src='https://www.youtube-nocookie.com/embed/" + VIDEO_ID + "' title='Demo walkthrough' allowfullscreen loading='lazy'></iframe>";
+    document.getElementById("vidslot").hidden = false;
+  }
+})();
+</script>
+</body>
+</html>
