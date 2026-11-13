@@ -1,131 +1,48 @@
-# AILT9019 Project – Group 36: HKU Course Planner
+# HKU Course Planner
 
-A local Python tool that turns a programme's requirement document into a
-semester-by-semester course plan, balanced by an estimated difficulty score.
-It is a *draft-plan helper*, not an official graduation audit, and it does not
-replace an academic adviser. Nothing you upload leaves your machine.
+AILT9019 project, Group 36.
 
-## Pipeline
+HKU publishes what each programme requires, but not when to take it or how heavy a
+semester will feel. Students usually work that out from memory, a spreadsheet or a short
+chat with an adviser, and often find out a semester is overloaded after they have enrolled.
 
-1. **Parse** a requirement document (PDF, plain text or CSV) into courses and prerequisites.
-2. **Load prepared reviews** from a local CSV. The repository includes demonstration
-   data; acquisition and approval of real RIC data are still pending.
-3. **Use prepared translations** to include and audit Chinese review rows. Translation
-   is optional team-side preprocessing and is not performed by the app; only the
-   numeric rating contributes to the difficulty score.
-4. **Score** each course's difficulty from 1 to 10 (credits 35%, assessments 35%,
-   numeric review ratings 30%).
-5. **Plan** courses across semesters, respecting prerequisites and a load limit.
-6. **Adjust** the plan by hand; every edit re-checks prerequisites and load.
+This tool reads a programme's requirement document (the faculty's syllabus PDF, pasted
+text or a CSV), works out which courses are still needed and in what order they can be
+taken, estimates how hard each course is, and spreads them over semesters so no semester
+carries far more than the others. You can then move courses around, add electives and rate
+courses yourself, and every change is checked straight away.
 
-See the project proposal for the full design and evaluation criteria.
+It is a draft-plan helper for students who already know their programme. It is not a
+graduation audit, it does not replace an academic adviser, and it is not meant for double
+majors, transfer credit or requirement waivers. Everything runs on your own computer, and
+nothing you upload is sent anywhere.
 
-## Status
+## Contents
 
-| Must-have                                   | Status |
-| ------------------------------------------- | ------ |
-| 1. Parse requirement document               | Built; 100% of courses and prerequisite links extracted on 8 constructed, hand-labelled documents (text, CSV and PDF paths); not yet tried on real public documents |
-| 2. Load a prepared local review CSV         | Built with bundled demonstration data; real RIC acquisition/provenance pending |
-| 3. Detect and translate Chinese reviews     | Standalone preparation helper built; the app only reads prepared translations |
-| 4. 1–10 difficulty score with fallback rule | Built; review input is a 1–5 numeric-rating proxy |
-| 5. Multi-semester plan generator            | Built |
-| 6. Review and adjust the plan               | Built |
-| 7. Flag prerequisite conflicts              | Built for course-code prerequisites |
+- [Quick start](#quick-start)
+- [Using the app](#using-the-app)
+- [How the plan and the difficulty score work](#how-the-plan-and-the-difficulty-score-work)
+- [Reading faculty syllabuses](#reading-faculty-syllabuses)
+- [Review data](#review-data)
+- [Where your data goes](#where-your-data-goes)
+- [Development and testing](#development-and-testing)
+- [Parser as an agent skill](#parser-as-an-agent-skill-claude-and-chatgpt)
+- [Status and known limitations](#status-and-known-limitations)
 
-## Setup
+## Quick start
 
-Requires Python 3.10+.
+You need Python 3.10 or newer.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-```
-
-## Run the app
-
-```bash
 streamlit run src/course_planner/app.py
 ```
 
-The app opens in your browser. Pick **Use the sample document** and press
-**Build my plan** to see a draft plan straight away, then move courses between
-semesters or add electives; every change is re-checked immediately. Uploaded
-documents and their parsed results are kept in a local SQLite file
-(`.course_planner/app.sqlite3`) and can be deleted from the sidebar. Set
-`COURSE_PLANNER_DB` to store it somewhere else.
-
-The difficulty score also reads prepared review rows from a local dataset
-(`data/reviews/sample_reviews.csv`); set `COURSE_PLANNER_REVIEWS` to point at
-your own prepared dataset. Without a dataset the score uses the requirement
-document only.
-
-After building a plan, the **Student reviews behind each score** panel lists every
-review for the planned courses: rating, original text, English translation and
-whether it was used in the score, so any difficulty number can be traced back.
-
-**Download plan as CSV** exports the current plan (including any manual edits and
-electives) with semester, course, credits, difficulty and the basis of each score.
-
-Under **Adjust your plan** you can also give a course your own 1-10 difficulty
-rating. It replaces the estimate for that course (marked "Your own rating") and
-the plan's totals and evenness are recalculated; you can remove it again.
-
-### Faculty syllabuses
-
-The parser reads three layouts, which can be mixed in one document: labelled blocks
-(`COMP1117 Programming (6 credits)` then `Prerequisite:` / `Assessment:`), table rows
-(`COMP1117 Computer programming 6`, optionally with a year-of-study column) and course
-descriptions (`COMP1117. Computer programming (6 credits)` followed by prose and
-`Prerequisite:` / `Assessment:` lines), and plain course lists (`CODE. Title (6 credits)` under
-headings such as "Core courses" or "Disciplinary Electives", with or without descriptions later).
-It was checked on eleven real 2025-26/2026-27 documents (BEcon, BEng(CompSc), BEng(DASE), BEng(CE, EE,
-ElecE), BA, BJ, BJ(MAI), BSocSc, LLB, BA&LLB and the ENGG regulations), which differ a lot: see "Known limitations" for what still needs care. A regulations
-document (rules but no course list) is recognised and the app says to upload the syllabus.
-
-- **Required vs choice.** Elective lists, "choose one of" pairs, "Focus" lists and courses that
-  appear only in a catalogue are tagged as electives. The app plans the required courses and
-  says how many it left out; add an elective by its code (its details are filled in from the
-  document) or list the courses you want under **Only plan these courses**.
-- **Several degrees in one file.** Some documents hold one syllabus per degree (for example
-  Computer, Electrical and Electronic Engineering, each starting with its title and `SYLLABUS`).
-  The first degree is read by default, the app lists the others under **Programme in this
-  document**, and choosing one and pressing **Build my plan** again plans that degree. Each
-  degree's tables are kept apart; the shared course descriptions after them are used by all.
-  Command line: `--programme "ELECTRICAL ENGINEERING"` with `syllabus_report` or `parse_cli`.
-- **Several programmes in one file.** Tables after a `MAJOR IN ...` / `MINOR IN ...` heading are
-  ignored. A document with more than 60 courses and no list from you (for example the BA
-  catalogue) is not planned; the app asks for your course list instead.
-- **Prerequisite expressions** are read with brackets and precedence: `ELEC2543 or (COMP2119 and
-  COMP2396)` becomes the equivalent AND-of-OR form, the "and" inside a course title is not a
-  connector, `, or` extends a list of alternatives, and "take X concurrently" or a grade on a
-  course is not a prerequisite. An alternative that is an exam level ("Level 2 in HKDSE
-  Mathematics, or MATH1011") makes the requirement impossible to enforce, so it is dropped and
-  reported, unless one of its courses is in the document (then it is kept for ordering).
-- **Prerequisites that are not course codes** ("At least one 2000-level course", "special
-  approval") are reported as warnings instead of silently dropped. `Mutually exclusive with`,
-  `Non-permissible combination` and placeholder codes such as `XXXX2002` are never prerequisites.
-- Assessment percentages (`50% coursework, 50% examination`) are counted as two components.
-
-**Trying another syllabus.** Run the report on any PDF, text or CSV file, or a whole folder
-(it runs locally and stores nothing):
-
-```bash
-python -m course_planner.syllabus_report path/to/syllabus.pdf
-python -m course_planner.syllabus_report path/to/folder --all     # list every course
-```
-
-It prints how many courses were found (required vs elective), how many have credits,
-prerequisites and assessments, the parser warnings, anything that looks wrong ("CHECK THESE":
-no courses, many courses without credits, paragraph-length titles) and a sample of courses
-to compare with the PDF. Then upload the same file in the app to see the plan. For a pass/fail
-version, `COURSE_PLANNER_REAL_SYLLABI=<folder> python -m pytest tests/test_real_syllabi.py`
-(use a folder that contains only syllabuses).
-
-## Reproducible sample
-
-With the bundled requirement document, bundled demonstration review CSV and
-default limits, **Build my plan** currently gives:
+The app opens in your browser. Leave **Use the sample document** selected and press
+**Build my plan**. The sample is a short, fictional Computer Science programme, so you get a
+draft plan without uploading anything:
 
 | Semester | Courses |
 | -------- | ------- |
@@ -133,165 +50,289 @@ default limits, **Build my plan** currently gives:
 | 2 | COMP2113, COMP2119, STAT2601 |
 | 3 | COMP3230, COMP3314 |
 
-The run parses 7 courses without warnings, loads 20 usable demonstration review
-rows covering all 7 courses, and reports no unscheduled courses or plan issues.
-Changing completed courses, semester limits or `COURSE_PLANNER_REVIEWS` can
-change the result.
+That run reads 7 courses with no warnings, uses 20 demonstration reviews that cover all 7,
+and finds nothing unscheduled and no plan problems. Changing the completed courses, the
+semester limits or the review file can change the result.
 
-## Review dataset
+## Using the app
 
-The bundled `data/reviews/sample_reviews.csv` is demonstration data and is not
-claimed to be real RIC data. A custom CSV uses these columns:
+**1. Give it your requirement document.** Upload a PDF, plain text or CSV file, or paste
+the text. Anything else is refused with a message saying so. Two optional boxes help when
+the document is not a simple list:
+
+- *Courses you have already completed* are left out of the plan and count as done for
+  prerequisites.
+- *Only plan these courses* is for documents that list far more than one student takes,
+  such as a faculty catalogue. Type the codes you plan to take and only those are planned.
+
+If the file contains several degrees (say, one syllabus each for Computer, Electrical and
+Electronic Engineering), a **Programme in this document** menu appears after the first
+build. The first degree is read by default. Pick another and press **Build my plan** again.
+
+The sidebar sets the limits: credits per semester (24 by default), courses per semester (5)
+and the number of semesters (8). It also has the button that deletes your saved documents.
+
+**2. Read the draft plan.** Each semester shows its courses, credits and total difficulty,
+with a note on how each score was reached ("Document only (no reviews)", "Past student
+reviews (4)" or "Your own rating"). Problems are listed in words with an icon, never by
+colour alone. If a course cannot be scheduled the app says which one and why, for example a
+circular prerequisite, a prerequisite that is not in the document, or a course bigger than
+the semester limit. It never drops a course quietly or hands back an invalid plan.
+
+A line under the plan compares how evenly your semesters are loaded with taking the courses
+in the order the document lists them. The **Student reviews behind each score** panel lists
+the reviews used, with the original wording next to the English text.
+
+**3. Adjust it.** Under *Adjust your plan* you can move a course to another semester or a
+new one, add an elective, give a course your own difficulty rating (it replaces the
+estimate), and reset to the suggested plan. The app never refuses a move. It re-checks
+prerequisites and load after every change and shows the problems, so you can try something
+and see what it breaks. **Download plan as CSV** saves the current plan, including your
+edits.
+
+Electives are handled separately. Syllabuses contain elective lists and "choose one of"
+options, and a student takes only some of them, so the app plans the required courses and
+tells you how many it left out. To bring one in, add it under *Add an elective* by its code.
+If the document describes it, its title, credits and prerequisites are filled in for you.
+
+## How the plan and the difficulty score work
+
+**The score.** Each course gets a number from 1 (light) to 10 (heavy) from three inputs:
+
+| Input | Weight | How it is turned into a 0 to 1 value |
+| ----- | ------ | ------------------------------------ |
+| Credits | 35% | credits divided by 12, capped at 1 |
+| Graded assessments | 35% | number of assessments divided by 8, capped at 1 |
+| Student reviews | 30% | the review ratings, described below |
+
+The weighted sum is stretched onto the 1 to 10 range. If a course has no usable reviews,
+the score uses only credits and assessments, their weights rescaled so the result still
+spans 1 to 10, and the course is marked as review-free. If the document does not give
+credits or an assessment count, the score assumes 6 credits and 4 assessments and says so.
+
+Reviews enter through their 1 to 5 rating: 5 counts as easy and 1 as hard. The ratings for
+a course are combined with a trimmed mean (the lowest and highest fifth are dropped once
+there are five or more), so one extreme review neither decides the score nor gets thrown
+away. The app does not read the review text. It keeps the text next to each score only so
+you can check where a number came from.
+
+The score is a rough estimate built from past student reviews and what the document says.
+It is not an official HKU rating.
+
+**The plan.** The planner first checks which courses can ever be scheduled. Then it orders
+them by prerequisites and finds the fewest semesters that fit your limits. Within that
+length it moves courses around to even out the total difficulty per semester, measured as
+the variance of the semester totals. The comparison line in the app is that variance against
+the same courses taken in document order.
+
+## Reading faculty syllabuses
+
+Real syllabuses differ a lot between faculties, so the parser handles several layouts, even
+mixed in one file:
+
+- labelled blocks: `COMP1117 Programming (6 credits)` followed by `Prerequisite:` and
+  `Assessment:` lines;
+- table rows: `COMP1117 Computer programming 6`, with or without a year-of-study column;
+- course descriptions: `COMP1117. Computer programming (6 credits)`, some prose, then the
+  `Prerequisite:` and `Assessment:` lines;
+- plain course lists under headings such as "Core courses" or "Disciplinary Electives".
+
+What the parser decides, and how it says so:
+
+- **Required or choice.** Courses in elective lists, "choose one of" groups and "Focus"
+  lists are tagged as electives. So are courses that are only described in a document that
+  also has requirement tables.
+- **Several degrees in one file.** Each degree's tables are kept apart and one is read at
+  a time. Course descriptions that follow are shared. Tables after a `MAJOR IN` or `MINOR IN`
+  heading are ignored.
+- **Too many courses.** A document with more than 60 required courses and no list from you,
+  like the BA catalogue, is not planned. The app asks for your course list instead.
+- **Prerequisites.** Brackets and precedence are respected, so `ELEC2543 or (COMP2119 and
+  COMP2396)` becomes the equivalent AND-of-OR form that the planner uses. The "and" inside a
+  course title does not split a requirement. "Take X concurrently", a grade on a course,
+  `Mutually exclusive with` and placeholder codes like `XXXX2002` are not prerequisites.
+- **Things that cannot be checked.** A prerequisite written as an exam level or approval
+  ("Level 2 in HKDSE Mathematics, or MATH1011", "special approval") cannot be enforced, so
+  it is reported as a warning. The parser never drops one silently. A course with no credits
+  in the document is also warned about, and its credits are left empty rather than guessed.
+- **Assessments** written as percentages (`50% coursework, 50% examination`) count as two.
+
+We tried it on eleven real 2025-26 and 2026-27 documents: BEcon, BEng (CompSc), BEng (DASE),
+BEng (CE, EE and ElecE), BA, BJ, BJ (MAI), BSocSc, LLB, BA & LLB, and the ENGG regulations.
+That last file is rules with no course list; the app recognises it and asks for the syllabus
+instead.
+
+**Trying another syllabus.** This reports how a file was read, locally, and stores nothing:
+
+```bash
+python -m course_planner.syllabus_report path/to/syllabus.pdf
+python -m course_planner.syllabus_report path/to/folder --all
+python -m course_planner.syllabus_report file.pdf --programme "ELECTRICAL ENGINEERING"
+```
+
+It prints how many courses it found (required and elective), how many have credits,
+prerequisites and assessments, the parser's warnings, a "CHECK THESE" list for the usual
+signs of trouble (no courses, many without credits, titles as long as paragraphs), and a
+sample to compare against the PDF. A clean report is not proof, so look at a few courses
+yourself, then upload the same file in the app.
+
+## Review data
+
+The app reads reviews from one local CSV, `data/reviews/sample_reviews.csv` by default. That
+file is demonstration data and is not real RIC data. Set `COURSE_PLANNER_REVIEWS` to use a
+different file. Without any file, scores come from the document alone.
 
 ```text
 course_code,text,rating,translation
 ```
 
-- `course_code`, `text` and `rating` are required for a row to contribute.
-- The current rating scale is 1 (lowest) to 5 (highest). It is mapped to a
-  difficulty proxy; the app does not perform sentiment analysis on review text.
-- An English review can leave `translation` blank. A Chinese review needs a
-  prepared English `translation`; otherwise it is excluded from the score.
-- The app reports how many rows were loaded and how many were excluded. A course
-  without usable reviews falls back to credits and assessment count, rescaled
-  equally across the full 1–10 range.
+- `course_code`, `text` and `rating` are needed for a row to count.
+- The rating runs from 1 (lowest) to 5 (highest). A rating outside that range, such as 0 or
+  8 on a 1 to 10 scale, is left out of the score and counted as excluded. It is never
+  stretched into the hardest or easiest review.
+- An English review can leave `translation` blank. A Chinese review needs an English
+  `translation` already filled in, otherwise it is left out.
+- After a build, the app says how many reviews it loaded and how many it left out.
 
-Before adding real review data, the team must confirm collection and reuse are
-permitted, remove personal identifiers, and avoid committing account details or
-other private information.
+Before real review data goes into the repository, the team has to confirm that collecting
+and reusing it is allowed, remove personal identifiers, and make sure no account details or
+other private information are included.
 
-## Preparing the review dataset (team only)
+**Preparing a translated dataset (team only).** You do not need this to run the app, which
+never translates anything and needs no model or API key. Chinese reviews can be translated
+once, when the dataset is built:
 
-**You do not need this section to use the app.** The app never translates
-anything itself: it reads a review dataset that already contains English text,
-so it needs no model, no extra install and no API key.
-
-Chinese reviews can be translated once, by the team, when the dataset is built:
-
-1. Install the optional translation dependencies and download the
-   `Helsinki-NLP/opus-mt-zh-en` model. Installation and the first model download
-   require internet access; translation then runs locally. PyTorch and the model
-   can require hundreds of MB to a few GB:
+1. Install the optional dependencies and download the `Helsinki-NLP/opus-mt-zh-en` model.
+   This needs internet and can take from hundreds of MB to a few GB. Translation then runs
+   locally.
 
    ```bash
    pip install -e ".[translation]"
    python -m course_planner.translation download
-   python -m course_planner.translation translate "這門課功課很多"   # quick test
+   python -m course_planner.translation translate "這門課功課很多"
    ```
 
-   The CLI command above is a quick text check, not a CSV batch-import command.
-   The app itself never invokes the translator.
+   The last command is a quick check on one sentence, not a way to translate a CSV.
+2. Have a teammate who reads Chinese check a sample. `export_review_sample` writes random
+   translated reviews to a CSV with blank `adequate` and `notes` columns to fill in. Machine
+   translation misses tone and idioms, and the model is weaker on colloquial Cantonese.
+3. Keep both the original and the English text in the final file, so every score can be
+   traced back to its source.
 
-2. Have a Chinese-reading teammate spot-check the output.
-   `export_review_sample` writes a CSV of random translated reviews with blank
-   `adequate` and `notes` columns to fill in. Machine translation can miss tone
-   and idioms, and the model is weaker on colloquial Cantonese.
-3. Ship the checked dataset with both the original and the English text, so any
-   score can be traced back to its source.
+## Where your data goes
 
-Reviews that are still untranslated when the app loads them are left out of the
-difficulty score, and the app says so.
+Nothing is sent to a remote service. Documents you upload and what the parser read from them
+are saved in a local SQLite file, `.course_planner/app.sqlite3` (change it with
+`COURSE_PLANNER_DB`). The sidebar button deletes everything in it. If reading a file fails,
+for example in a live demo, the saved result for the same file is shown instead, and the app
+says so. The review CSV is a plain file next to the app, is never copied into the database,
+and is not touched by that button. Only installing the packages and the one-off translation
+model download use the internet.
 
-## Data and privacy
-
-The running app does not send requirement documents or review data to a remote
-service. Successfully parsed inputs and their parsed JSON are stored in the
-local SQLite file `.course_planner/app.sqlite3`; the sidebar can delete its saved
-rows. Package installation and the optional first translation-model download do
-use the internet.
-
-## Development
+## Development and testing
 
 ```bash
-python -m pytest -q       # run the complete test suite, including Streamlit UI tests
-python -m pytest -q --ignore=tests/test_app.py  # run the non-UI suite only
-python -m ruff check .    # lint
+python -m pytest -q                              # everything, including the Streamlit tests
+python -m pytest -q --ignore=tests/test_app.py   # without the browser-style app tests
+python -m ruff check .                           # lint
 ```
 
-Check the plan generator against a folder of requirement documents (every plan
-must contain each course once, respect prerequisites and stay under the load
-limit, and be more even than document order in at least 4 of 5 cases):
+**Plan check.** This runs the proposal's test on a folder of requirement documents. Every
+plan must contain each required course once, respect prerequisites and stay within the load
+limit, and be more even than document order in at least 4 of 5 cases:
 
 ```bash
 python -m course_planner.evaluation tests/fixtures/requirements
 ```
 
-For the five bundled constructed fixtures, the current result is 5/5 legality
-checks, 4/5 plans more even than document-order baseline, and overall `PASS`.
-This evaluation uses document-only difficulty scores; it does not validate the
-review dataset. All 267 tests (including the Streamlit UI tests) pass.
+On the five constructed fixtures it gives 5 of 5 legal plans and 4 of 5 more even than the
+baseline, so it passes. It uses document-only scores and says nothing about the reviews.
 
-### Parsing acceptance check
-
-The proposal calls parsing done when at least 95% of courses and prerequisite
-links are extracted correctly. Each document in `tests/fixtures/labels/` has a
-hand-written JSON label file listing its courses, credits, assessment counts and
-prerequisite groups; the check compares the parser's output with those labels:
+**Parsing check.** The proposal counts parsing as done when at least 95% of courses and
+prerequisite links are extracted correctly. Each document in `tests/fixtures/labels/` has a
+hand-written label file with its courses, credits, assessment counts and prerequisite
+groups, and the checker compares the parser against it:
 
 ```bash
 python -m course_planner.parsing_eval tests/fixtures/labels \
     tests/fixtures/requirements tests/fixtures/messy data/samples
+python -m course_planner.parsing_eval tests/fixtures/labels_syllabi tests/fixtures/syllabi
 ```
 
-- A *link* is one prerequisite group of one course, so `COMP1117 and (MATH1013 or
-  MATH1853)` is two links and a half-right "or" group counts as wrong.
-- Both **recall** (how much of the truth was found) and **precision** (how much of
-  what was found is true) must reach 95% for courses and for links.
-- Credits and assessment counts are reported but are not part of the bar.
-- Current result on the 8 documents (the five plan fixtures, the sample, and two
-  harder constructed layouts: numbered/wrapped text and a CSV with different
-  column names): 100% on all four measures, `PASS`. The test suite also runs the
-  text documents through the PDF path.
+A *link* is one prerequisite group of one course, so `COMP1117 and (MATH1013 or MATH1853)`
+is two links, and a half-right "or" group counts as wrong. Recall and precision must both
+reach 95% for courses and for links. Credits and assessment counts are reported but are not
+part of the bar. Both commands pass at 100%. The first set covers the five plan fixtures,
+the sample and two harder layouts. The second covers fictional documents built to follow the
+structure of the real syllabuses. The tests also push the text documents through the PDF
+path.
 
-Writing the harder documents found and fixed three real parser bugs: pipe-separated
-one-line courses were read twice (inflating assessment counts and inventing extra
-prerequisite groups), section headings such as "Core courses and electives" were
-counted as assessments, and a CSV header like `Pre-requisites` was not recognised.
+Those figures are for documents we wrote, so they show the parser handles those layouts,
+not how well it does on any real faculty file. For real files there are no labels. Instead,
+`tests/test_real_syllabi.py` checks that nothing looks wrong (no paragraph read as a title,
+no course missing a warning for missing credits, no duplicate or placeholder codes). It
+runs only when you point it at a folder of PDFs, which should hold syllabuses and nothing
+else:
+
+```bash
+COURSE_PLANNER_REAL_SYLLABI=path/to/folder python -m pytest tests/test_real_syllabi.py
+```
 
 ## Parser as an agent skill (Claude and ChatGPT)
 
-`skills/parse-requirements/` packages the document parser in the open Agent Skills
-format (`SKILL.md` with `name` and `description`, plus a `scripts/` folder), which both
-Claude and ChatGPT/Codex document. It prints courses, prerequisites and warnings as JSON.
-
-Build a self-contained upload (it bundles the parser modules, so nothing needs installing):
+`skills/parse-requirements/` packages the parser in the open Agent Skills format: a
+`SKILL.md` with a name and description, plus a `scripts/` folder. Both Claude and
+ChatGPT/Codex document this layout. It prints courses, prerequisites and warnings as JSON.
 
 ```bash
 python skills/build_skill.py        # writes dist/parse-requirements.zip
 ```
 
-- **Claude:** upload the zip under Customize > Skills on claude.ai (a paid plan with code
-  execution is required), or unzip the folder into `~/.claude/skills/` for Claude Code.
-  Claude requires the skill folder at the top level of the zip, which the builder does.
-- **ChatGPT / Codex:** the same folder follows OpenAI's documented skill layout. OpenAI's
-  public docs do not describe a zip upload or whether ChatGPT can run scripts, so this
-  has **not been tested in ChatGPT**; if scripts cannot run there, the instructions still
-  explain the output format.
-- Plain text and CSV need no packages. PDF needs `pdfplumber` in the sandbox, which we
-  have not confirmed is available in either product.
+The zip carries its own copy of the parser modules, so nothing needs installing.
 
-## Known limitations
+- **Claude:** upload the zip under Customize > Skills on claude.ai (this needs a paid plan
+  with code execution), or unzip the folder into `~/.claude/skills/` for Claude Code.
+- **ChatGPT and Codex:** the folder follows OpenAI's documented skill layout, but OpenAI's
+  public docs don't say how to upload a zip or whether ChatGPT can run the scripts, so we
+  have not tried it there.
+- Plain text and CSV need no packages. PDF needs `pdfplumber` in the sandbox, which we have
+  not confirmed is available in either product.
 
-- Real syllabuses mostly do not list prerequisites (BEcon lists none; BEng lists them only in
-  course descriptions) and BEcon's year-of-study column is not used by the planner, so a plan
-  can place a final-year course early. Treat the order as a starting point.
-- Combined programmes (BA&LLB) list long options groups without a heading the parser can read as
-  "choose from", so some options are treated as required; the app reports the ones it cannot
-  schedule. Several faculties omit credits for whole lists (always warned, never guessed).
-- Table layouts that pdf text extraction scrambles (for example BEcon's stacked "A or B" rows)
-  can leave a course without credits; the app warns when that happens.
-- The 95% parsing target is met only on constructed documents written by the team.
-  The proposal's two real public requirement documents (identifying details
-  removed) have not been added, so real-world parsing accuracy is still unmeasured.
-- The bundled reviews are demonstration data; real RIC acquisition, permission,
-  provenance and evaluation are pending.
-- Review influence is derived from a numeric 1–5 rating, not review-text
-  sentiment analysis. Translation quality has not been evaluated on real RIC
-  or colloquial Cantonese data.
-- Prerequisite checking recognises course codes. Conditions such as year
-  standing, department approval and other non-code rules are not enforced.
-- Semester availability, timetable clashes, double majors, transfer credits and
-  requirement waivers are outside the current scope.
-- This is a planning aid, not an official HKU graduation audit or difficulty
-  rating; students must verify the result with current programme rules and an
-  academic adviser.
+## Status and known limitations
+
+Must-have items from the proposal:
+
+| Item | Status |
+| ---- | ------ |
+| 1. Parse a requirement document | Built. 100% on our labelled documents. Tried on eleven real syllabuses and checked against their text, but with no labelled accuracy figure for real files. |
+| 2. Load a local review CSV | Built, with demonstration data. Real RIC data and its permission are still open. |
+| 3. Detect and translate Chinese reviews | The translation helper is built. The app reads only translations prepared beforehand. |
+| 4. 1 to 10 score with a fallback rule | Built. Review input is the 1 to 5 rating. |
+| 5. Multi-semester plan | Built |
+| 6. Review and adjust the plan | Built |
+| 7. Flag prerequisite conflicts | Built for course-code prerequisites. Other conditions are reported, not enforced. |
+
+Should-have items: CSV export, self-reported difficulty ratings and the skill file are
+built. A second review source and the study with HKU students are not.
+
+What to keep in mind when reading a plan:
+
+- Syllabuses mostly don't list prerequisites. BEcon lists none, and BEng lists them only
+  in course descriptions. BEcon's year-of-study column is read but not used, so a plan can
+  put a final-year course in semester 1. Treat the order as a starting point.
+- Documents that bundle degrees or long options groups (BA & LLB, BA, BSocSc) can't be
+  planned without your help. BA & LLB has an options group without a heading the parser can
+  read as "choose from", so some options count as required, and the app lists the ones it
+  can't schedule.
+- Several faculties leave credits out of whole lists. The app warns and leaves the credits
+  empty. Stacked "A or B" table cells that PDF extraction scrambles can do the same.
+- The score comes from a 1 to 5 rating, not from reading review text. The bundled reviews
+  are made up, and translation quality has not been tested on real RIC or colloquial
+  Cantonese text.
+- Prerequisite checks cover course codes. Year standing, department approval and exam
+  grades are not enforced.
+- Semester availability, timetable clashes, double majors, transfer credit and requirement
+  waivers are out of scope.
+
+This is a planning aid. It is not an official HKU graduation audit or difficulty rating, so
+check the result against the current programme rules and with an academic adviser.
