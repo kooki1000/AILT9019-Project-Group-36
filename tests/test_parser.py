@@ -217,3 +217,15 @@ def test_csv_prerequisite_column_name_variants(header):
     result = parse_csv(f"Course Code,Units,{header}\nCOMP2113,6,COMP1117\n")
     assert result.courses[0].credits == 6
     assert result.courses[0].prerequisites == (("COMP1117",),)
+
+
+def test_csv_reports_prerequisites_that_are_not_course_codes():
+    # Regression: only text documents warned; a CSV silently dropped "Level 3 in Mathematics".
+    result = parse_csv(
+        "code,credits,prerequisites\n"
+        "COMP1117,6,Level 3 in HDKSE Mathematics\n"
+        "COMP2113,6,COMP1117\n"
+        "COMP2119,6,None\n"
+    )
+    assert any("COMP1117" in w and "not (only) course codes" in w for w in result.warnings)
+    assert not any("COMP2113" in w or "COMP2119" in w for w in result.warnings)

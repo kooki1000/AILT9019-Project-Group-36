@@ -100,3 +100,26 @@ def test_review_rows_keep_original_text_and_say_what_was_used():
     assert rows[1]["English translation"] == "Lots of homework"
     assert "not translated" in rows[2]["Used in score"]
     assert "no rating" in rows[3]["Used in score"] and rows[3]["Rating (1-5)"] == "—"
+
+
+def test_out_of_range_ratings_are_excluded_not_clamped(tmp_path):
+    # Regression: a rating of 0, or 9 on a 1-10 scale, was clamped to the hardest/easiest
+    # review and fed into the score without a word.
+    path = tmp_path / "reviews.csv"
+    path.write_text(
+        "course_code,text,rating,translation\n"
+        "A1,Fine,3,\n"
+        "A1,Wrong scale,9,\n"
+        "A1,Missing,0,\n"
+    )
+    data = load_dataset(path)
+    assert data.sentiments == {"A1": [0.0]}
+    assert data.excluded == 2
+
+
+def test_review_rows_say_why_an_out_of_range_rating_was_not_used():
+    from course_planner.models import Review
+    from course_planner.reviews import review_rows
+
+    row = review_rows([Review("A1", "Fine", 9, "Fine", "en", "not_needed")])[0]
+    assert "outside 1-5" in row["Used in score"] and row["Used in score"].startswith("⚠️")

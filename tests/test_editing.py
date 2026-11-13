@@ -75,3 +75,10 @@ def test_summarise_attaches_problems_to_their_semester():
 def test_missing_course_is_plan_wide():
     issues = check_plan([["A1"]], CATALOG, (), LIMITS, required=CATALOG)
     assert {i.kind for i in plan_wide_issues(issues)} == {IssueKind.MISSING_COURSE}
+
+
+def test_summary_total_uses_the_same_default_difficulty_as_the_evenness_metric():
+    from course_planner.metrics import DEFAULT_DIFFICULTY
+
+    summary = summarise([["A1", "B1"]], CATALOG, {"A1": 2.0}, LIMITS, [])[0]
+    assert summary.difficulty == round(2.0 + DEFAULT_DIFFICULTY, 2)

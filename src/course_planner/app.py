@@ -156,7 +156,7 @@ def build_plan() -> None:
                 (
                     "warning",
                     f"{review_data.excluded} review(s) were left out of the difficulty score "
-                    "(not translated or no rating).",
+                    "(not translated, or no rating on the 1-5 scale).",
                 )
             )
     else:
