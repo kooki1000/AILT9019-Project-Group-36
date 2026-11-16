@@ -119,10 +119,19 @@ def parse_document(
             f"'{filename or 'This file'}' is not a supported file type. "
             "Please upload a PDF, plain text (.txt) or CSV file."
         )
-    if suffix == ".pdf":
-        return parse_text(extract_pdf_text(data), programme)
-    text = data.decode("utf-8-sig", errors="replace")
+    text = document_text(data, filename)
     return parse_csv(text) if suffix == ".csv" else parse_text(text, programme)
+
+
+def document_text(data: bytes, filename: str) -> str:
+    """Plain text of an uploaded document (PDFs are extracted first).
+
+    Used by the optional AI parse. The file type is not checked here; callers
+    use it only for documents ``parse_document`` already accepted.
+    """
+    if Path(filename).suffix.lower() == ".pdf":
+        return extract_pdf_text(data)
+    return data.decode("utf-8-sig", errors="replace")
 
 
 def extract_pdf_text(data: bytes) -> str:

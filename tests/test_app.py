@@ -187,6 +187,80 @@ def test_reviews_are_loaded_into_the_score(app, monkeypatch):
     )
 
 
+def test_ai_parse_off_by_default_keeps_everything_local(built):
+    assert built.toggle(key="use_ai_parse").value is False
+    captions = " ".join(c.value for c in built.sidebar.caption)
+    assert "Nothing you upload leaves this computer." in captions
+
+
+def test_ai_parse_toggle_reports_suggestions_not_in_the_document(app, monkeypatch):
+    monkeypatch.delenv("COURSE_PLANNER_API_KEY", raising=False)
+    import course_planner.ai_parse as ai_parse
+
+    class Fake:
+        def chat(self, prompt):
+            return (
+                '{"courses": [{"code": "COMP9999", "title": "Invented", "credits": 6, '
+                '"prerequisites": "", "assessments": ""}]}'
+            )
+
+    monkeypatch.setattr(ai_parse, "BailianClient", Fake)
+    app.toggle(key="use_ai_parse").set_value(True).run()
+    at = click(app, "Build my plan")
+    body = text(at)
+    captions = " ".join(c.value for c in at.sidebar.caption)
+    assert "Alibaba Cloud" in captions  # the sidebar says plainly where the text goes
+    assert "COMP9999" in body and "were ignored" in body
+    assert "AI parse added" not in body
+
+
+def test_ai_parse_without_a_key_says_so_in_plain_words(app, monkeypatch):
+    monkeypatch.delenv("COURSE_PLANNER_API_KEY", raising=False)
+    monkeypatch.delenv("DASHSCOPE_API_KEY", raising=False)
+    app.toggle(key="use_ai_parse").set_value(True).run()
+    at = click(app, "Build my plan")
+    body = text(at)
+    assert "AI parsing did not run" in body
+    assert "COURSE_PLANNER_API_KEY" in body
+
+
+def test_ai_parse_replays_a_saved_answer_when_the_service_is_down(app, monkeypatch):
+    monkeypatch.delenv("COURSE_PLANNER_API_KEY", raising=False)
+    import json
+
+    import course_planner.ai_parse as ai_parse
+    from course_planner.storage import DocumentStore
+
+    class Down:
+        def chat(self, prompt):
+            raise ai_parse.AiParseError("the AI service could not be reached.")
+
+    monkeypatch.setattr(ai_parse, "BailianClient", Down)
+    document = "Core courses\nTake COMP 2113 Programming Technologies in year two (6 credits).\n"
+    cached = json.dumps(
+        {
+            "courses": [
+                {
+                    "code": "COMP2113",
+                    "title": "Programming Technologies",
+                    "credits": "6",
+                    "prerequisites": "",
+                    "assessments": "",
+                }
+            ]
+        }
+    )
+    DocumentStore().save_ai_response(document.encode("utf-8"), cached)
+
+    paste(app, document)
+    app.toggle(key="use_ai_parse").set_value(True).run()
+    at = click(app, "Build my plan")
+    body = text(at)
+    assert "saved AI answer" in body
+    assert "added 1 course(s)" in body and "COMP2113" in body
+    assert planned(at) == {"COMP2113"}
+
+
 def test_saved_documents_can_be_deleted_from_the_app(built):
     assert "Saved documents: 1" in text(built)
     built = click(built, "Delete all saved documents")
