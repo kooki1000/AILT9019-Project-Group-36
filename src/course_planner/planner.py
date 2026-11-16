@@ -125,7 +125,7 @@ def generate_plan(
     if schedulable:
         by_code = {c.code: c for c in schedulable}
         semesters = _best_balanced(
-            schedulable, levels, done, difficulty, constraints, len(baseline), pins
+            schedulable, levels, done, difficulty, constraints, baseline, pins
         )
         if semesters is None or check_plan(semesters, by_code, done, constraints):
             # No balanced plan in the allowed range (or, defensively, an invalid
@@ -448,7 +448,7 @@ def _best_balanced(
     completed: set[str],
     difficulty: Mapping[str, float],
     constraints: PlanConstraints,
-    baseline_length: int,
+    baseline: Sequence[Sequence[str]],
     pinned: Mapping[str, int],
 ) -> list[list[str]] | None:
     """Balanced plan over the fewest semesters that work, or ``None``."""
@@ -460,10 +460,17 @@ def _best_balanced(
         max(pinned.values(), default=-1) + 1,
     )
     height = _heights(schedulable, level)
-    for n in range(lower_bound, min(baseline_length, constraints.max_semesters) + 1):
-        built = _build_balanced(schedulable, height, completed, difficulty, constraints, n, pinned)
-        if built is not None:
-            return _improve(built, schedulable, completed, difficulty, constraints, pinned)
+    for n in range(lower_bound, min(len(baseline), constraints.max_semesters) + 1):
+        # The balanced build can run out of semesters when long prerequisite chains are left
+        # until late, so if it fails try again starting the longest chains first.
+        for critical_first in (False, True):
+            built = _build_balanced(
+                schedulable, height, completed, difficulty, constraints, n, pinned, critical_first
+            )
+            if built is not None:
+                return _improve(
+                    built, schedulable, completed, difficulty, constraints, pinned, baseline
+                )
     return None
 
 
@@ -475,6 +482,7 @@ def _build_balanced(
     constraints: PlanConstraints,
     n_semesters: int,
     pinned: Mapping[str, int],
+    critical_first: bool = False,
 ) -> list[list[str]] | None:
     order = {c.code: i for i, c in enumerate(schedulable)}
     load = {c.code: difficulty.get(c.code, DEFAULT_DIFFICULTY) for c in schedulable}
@@ -533,7 +541,11 @@ def _build_balanced(
                 break
             course = min(
                 candidates,
-                key=lambda c: (abs(total + load[c.code] - target), order[c.code]),
+                key=lambda c: (
+                    -height[c.code] if critical_first else 0,
+                    abs(total + load[c.code] - target),
+                    order[c.code],
+                ),
             )
             chosen.append(course)
             credits += course_credits(course, constraints)
@@ -541,11 +553,12 @@ def _build_balanced(
 
         optional = sorted(
             (c for c in available if c not in chosen),
-            key=lambda c: (-load[c.code], order[c.code]),
+            key=lambda c: (-height[c.code] if critical_first else 0, -load[c.code], order[c.code]),
         )
         for course in optional:
-            if fits(course, credits, len(chosen)) and abs(total + load[course.code] - target) < abs(
-                total - target
+            # Packing mode takes everything that fits; the local search evens the plan out later.
+            if fits(course, credits, len(chosen)) and (
+                critical_first or abs(total + load[course.code] - target) < abs(total - target)
             ):
                 chosen.append(course)
                 credits += course_credits(course, constraints)
@@ -566,10 +579,13 @@ def _improve(
     difficulty: Mapping[str, float],
     constraints: PlanConstraints,
     pinned: Mapping[str, int],
+    baseline: Sequence[Sequence[str]] = (),
 ) -> list[list[str]]:
     """Move or swap courses while the plan stays valid and gets more even.
 
-    Pinned courses stay where they are.
+    Pinned courses stay where they are. Once no move makes the plan more even, courses move back
+    toward their document-order semester as long as the plan stays (nearly) as even, so
+    courses with nothing to tell them apart are not scattered at random.
     """
     by_code = {c.code: c for c in schedulable}
     required = [code for sem in semesters for code in sem]
@@ -586,6 +602,27 @@ def _improve(
             ):
                 plan, best, improved = candidate, variance, True
                 break
+
+    home = {code: i for i, sem in enumerate(baseline) for code in sem}
+
+    def drift(candidate: Sequence[Sequence[str]]) -> int:
+        return sum(abs(i - home.get(code, i)) for i, sem in enumerate(candidate) for code in sem)
+
+    if home:
+        ceiling = best + max(0.05, 0.02 * best)
+        away = drift(plan)
+        improved = True
+        while improved:
+            improved = False
+            for candidate in _neighbours(plan, set(pinned)):
+                closer = drift(candidate)
+                if (
+                    closer < away
+                    and load_variance(candidate, difficulty) <= ceiling
+                    and not check_plan(candidate, by_code, completed, constraints, required)
+                ):
+                    plan, away, improved = candidate, closer, True
+                    break
 
     while plan and not plan[-1]:
         plan.pop()

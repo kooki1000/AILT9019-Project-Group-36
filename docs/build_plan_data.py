@@ -8,6 +8,8 @@ as a small JS file the page loads. Scores come from the document alone (no revie
 The app reads courses by course code. The mock study plan also has slots with no code (Common
 Core, Chinese language, free electives), so this script adds those as 6-credit courses with
 nothing known about them, which the scoring treats as mid-range. They are marked ``generic``.
+The 12-credit final year project runs through all of Year 4, so it is split into two 6-credit
+halves pinned to the two Year 4 semesters, and the two digital literacy courses are pinned too.
 
     python docs/build_plan_data.py
 """
@@ -29,47 +31,50 @@ from course_planner.parser import parse_text  # noqa: E402
 from course_planner.planner import PlanConstraints, generate_plan  # noqa: E402
 
 ROUTE = ROOT / "data" / "samples" / "cs_route_8_semesters.txt"
-# Eight semesters of 30 credits (240 in all) and at most 5 courses. The 12-credit final year
-# project takes two slots, so its semester has four tiles.
-ROUTE_LIMITS = PlanConstraints(max_credits=30, max_courses=5, max_semesters=8)
+# Most semesters are 30 credits and 5 courses (240 credits in all). The two 3-credit digital
+# literacy courses mean one semester has to be 33 credits and 6 courses, so that is the limit.
+ROUTE_LIMITS = PlanConstraints(max_credits=33, max_courses=6, max_semesters=8)
 
-# Credits each group must reach, from the mock study plan.
+# Credits each group must reach, from the syllabus.
 CATEGORIES = [
     ("foundation", "Foundation courses", 36),
     ("core", "Disciplinary core courses", 54),
     ("capstone", "Capstone experience", 12),
-    ("elective", "Disciplinary electives", 42),
-    ("free", "Free electives", 42),
-    ("common", "Common Core, English and digital literacy", 54),
+    ("elective", "Disciplinary elective courses", 42),
+    ("free", "Elective courses (free electives)", 42),
+    ("uni", "University requirements", 54),
 ]
-# Section headings in the route document, in the order they appear there.
+# Section headings in the route document.
 HEADINGS = {
     "Foundation courses": "foundation",
     "Disciplinary core courses": "core",
     "Capstone experience": "capstone",
     "Disciplinary courses for this route": "elective",
-    "English and digital literacy": "common",
+    "University requirements": "uni",
 }
 # The mock study plan read top to bottom, one semester at a time. This is the "document order"
-# the plan is compared with. A name with no course code is a slot with nothing known about it
-# (Common Core, Chinese language, free elective); "Disciplinary elective" slots take the route's
-# chosen electives in the order they are listed in the route document.
+# the plan is compared with. A name with no course code is a slot with nothing known about it;
+# "Disciplinary elective" slots take the route's chosen disciplinary electives in the order they
+# are listed in the route document.
 SLOTS = [
     "COMP1117", "MATH1013", "AILT1001", "Common Core", "Common Core",
     "COMP1110", "COMP2113", "MATH2012", "Common Core", "Common Core",
-    "MATH2014", "COMP2120", "COMP2119", "Common Core", "Free Elective",
+    "MATH2014", "COMP2120", "COMP2119", "AILT9019", "Common Core", "Free Elective",
     "COMP2121", "SDST2601", "COMP3314", "COMP3297", "Common Core",
     "COMP3230", "COMP3251", "COMP3278", "Disciplinary elective", "Free Elective",
     "Disciplinary elective", "Disciplinary elective", "Disciplinary elective",
     "Chinese Language", "Free Elective",
     "COMP4801", "CAES9542", "Disciplinary elective", "Free Elective", "Free Elective",
-    "Disciplinary elective", "Disciplinary elective", "Free Elective", "Free Elective",
+    "COMP4801", "Disciplinary elective", "Disciplinary elective", "Free Elective", "Free Elective",
 ]
 GENERIC = {
-    "Common Core": ("common", "Any Common Core course"),
-    "Chinese Language": ("common", "Chinese language enhancement"),
-    "Free Elective": ("free", "Any course you like"),
+    "Common Core": ("uni", "Any Common Core course"),
+    "Chinese Language": ("uni", "Chinese language enhancement course"),
+    "Free Elective": ("free", "Any course from any department except Common Core"),
 }
+# Fixed in a semester (0-based): AILT1001 in Year 1 Semester 1, AILT9019 in Year 2 Semester 1,
+# and the year-long final year project across both Year 4 semesters.
+PINNED = {"AILT1001": 0, "AILT9019": 2, "COMP4801 part 1": 6, "COMP4801 part 2": 7}
 
 
 def categories_by_code(text: str) -> dict[str, str]:
@@ -95,7 +100,16 @@ def build(path: Path = ROUTE, constraints: PlanConstraints = ROUTE_LIMITS) -> di
     for slot in SLOTS:
         if slot == "Disciplinary elective":
             slot = electives.pop(0)
-        if slot in by_code:
+        if slot == "COMP4801":
+            # A 12-credit course that runs through all of Year 4: 6 credits in each semester.
+            part = counts["COMP4801"] = counts.get("COMP4801", 0) + 1
+            whole = by_code[slot]
+            half = Course(
+                f"COMP4801 part {part}", whole.title, whole.credits // 2, (), whole.assessments
+            )
+            hint = f"{whole.title}, year-long (part {part} of 2)"
+            entries.append((half, group_of[slot], slot, hint, False))
+        elif slot in by_code:
             course = by_code[slot]
             entries.append((course, group_of[slot], course.code, course.title, False))
         else:
@@ -106,7 +120,7 @@ def build(path: Path = ROUTE, constraints: PlanConstraints = ROUTE_LIMITS) -> di
 
     courses = [e[0] for e in entries]
     difficulty = {c.code: difficulty_score(c).score for c in courses}
-    result = generate_plan(courses, (), difficulty, constraints)
+    result = generate_plan(courses, (), difficulty, constraints, pinned=PINNED)
     return {
         "limits": {"credits": constraints.max_credits, "courses": constraints.max_courses},
         "groups": [{"id": g, "name": n, "needed": need} for g, n, need in CATEGORIES],

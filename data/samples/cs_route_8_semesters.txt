@@ -1,121 +1,120 @@
 BEng in Computer Science: sample 8-semester route
 
-A sample requirement document for the course planner, modelled on the HKU BEng (Computer
-Science) 2025-26 syllabus and its mock study plan, which assumes CAES1001 and MATH1011
-exemptions. Codes, titles, credits and prerequisites come from the syllabus, and prerequisite
-alternatives that are not in this route are left out. The assessment counts are made up for
-the demo, because the syllabus gives percentages instead of counts. The Common Core courses,
-Chinese language course, free electives and the COMP3410 summer internship have no course code
-here, so the page's data script adds them. The syllabus lists no prerequisite for COMP4801, so
-the three advanced core courses are added as one to keep it in the final year. The route is not
-an official study plan.
+A sample requirement document for the course planner, built from the HKU BEng (Computer Science)
+2025-26 syllabus and its mock study plan, which assumes the English and mathematics exemptions.
+Course codes, titles, credits, prerequisites and assessment lines are the syllabus's own, and
+prerequisite alternatives that are not in this route are left out. The syllabus has no assessment
+details for some courses, so those have none here. The two digital literacy courses are 3 credits
+each (6 together), and the first one's title is not in the syllabus. The final year project is
+12 credits across Year 4, which the page's data script spreads over both semesters. The Common
+Core, the Chinese language course, the courses taken from any department and the summer
+internship have no course code here, so the script adds them. The route is not an official
+study plan.
 
 Foundation courses
 
-COMP1117 Computer programming (6 credits)
-  Prerequisite: None
-  Assessment: 5 graded assessments
-
-MATH1013 University mathematics II (6 credits)
-  Prerequisite: None
-  Assessment: 4 graded assessments
-
 COMP1110 Computing and data science in everyday life (6 credits)
   Prerequisite: None
-  Assessment: 3 graded assessments
+  Assessment: 100% continuous assessment
+
+COMP1117 Computer programming (6 credits)
+  Prerequisite: None
+  Assessment: 50% continuous assessment, 50% examination
 
 COMP2113 Programming technologies (6 credits)
   Prerequisite: COMP1117
-  Assessment: 6 graded assessments
+  Assessment: 70% continuous assessment, 30% examination
+
+MATH1013 University mathematics II (6 credits)
+  Prerequisite: None
 
 MATH2012 Fundamental concepts of mathematics (6 credits)
   Prerequisite: None
-  Assessment: 4 graded assessments
 
 MATH2014 Multivariable calculus and linear algebra (6 credits)
   Prerequisite: None
-  Assessment: 4 graded assessments
 
 Disciplinary core courses
 
 COMP2119 Introduction to data structures and algorithms (6 credits)
   Prerequisite: COMP2113
-  Assessment: 5 graded assessments
+  Assessment: 40% continuous assessment, 60% examination
 
 COMP2120 Computer organization (6 credits)
   Prerequisite: COMP1117
-  Assessment: 4 graded assessments
+  Assessment: 50% continuous assessment, 50% examination
 
 COMP2121 Discrete mathematics (6 credits)
   Prerequisite: None
-  Assessment: 4 graded assessments
+  Assessment: 50% continuous assessment, 50% examination
 
 SDST2601 Probability and statistics I (6 credits)
   Prerequisite: None
-  Assessment: 4 graded assessments
-
-COMP3314 Introduction to machine learning (6 credits)
-  Prerequisite: (MATH2014 or MATH1013) and COMP2119
-  Assessment: 5 graded assessments
-
-COMP3297 Software engineering (6 credits)
-  Prerequisite: COMP2113
-  Assessment: 6 graded assessments
+  Assessment: 40% continuous assessment, 60% examination
 
 COMP3230 Principles of operating systems (6 credits)
   Prerequisite: COMP2113 and COMP2120
-  Assessment: 5 graded assessments
+  Assessment: 50% continuous assessment, 50% examination
 
 COMP3251 Algorithm design (6 credits)
   Prerequisite: COMP2119
-  Assessment: 4 graded assessments
+  Assessment: 50% continuous assessment, 50% examination
 
 COMP3278 Introduction to database management systems (6 credits)
   Prerequisite: COMP2119
-  Assessment: 5 graded assessments
+  Assessment: 50% continuous assessment, 50% examination
+
+COMP3297 Software engineering (6 credits)
+  Prerequisite: COMP2113
+  Assessment: 50% continuous assessment, 50% examination
+
+COMP3314 Introduction to machine learning (6 credits)
+  Prerequisite: (MATH2014 or MATH1013) and COMP2119
+  Assessment: 50% continuous assessment, 50% examination
 
 Capstone experience
 
 COMP4801 Final year project (12 credits)
-  Prerequisite: COMP3230 and COMP3297 and COMP3314
-  Assessment: 3 graded assessments
+  Prerequisite: None
+  Assessment: 100% continuous assessment
 
 Disciplinary courses for this route
 
 COMP3270 Introduction to artificial intelligence (6 credits)
   Prerequisite: COMP2119
-  Assessment: 4 graded assessments
+  Assessment: 50% continuous assessment, 50% examination
 
 COMP3340 Introduction to deep learning (6 credits)
   Prerequisite: COMP2119 and (MATH2014 or MATH1013)
-  Assessment: 5 graded assessments
+  Assessment: 50% continuous assessment, 50% examination
 
 COMP3355 Cyber security (6 credits)
   Prerequisite: COMP2119
-  Assessment: 4 graded assessments
+  Assessment: 50% continuous assessment, 50% examination
 
 COMP3323 Advanced database systems (6 credits)
   Prerequisite: COMP3278
-  Assessment: 5 graded assessments
+  Assessment: 50% continuous assessment, 50% examination
 
 COMP3322 Modern technologies on World Wide Web (6 credits)
   Prerequisite: COMP1117
-  Assessment: 5 graded assessments
+  Assessment: 60% continuous assessment, 40% examination
 
 COMP3361 Natural language processing (6 credits)
   Prerequisite: (COMP3314 or COMP3340) and MATH1013
-  Assessment: 4 graded assessments
+  Assessment: 50% continuous assessment, 50% examination
 
 COMP4511 Principles of deep learning (6 credits)
   Prerequisite: COMP3340
-  Assessment: 3 graded assessments
+  Assessment: 100% continuous assessment
 
-English and digital literacy
-
-AILT1001 Digital literacy course (6 credits)
-  Prerequisite: None
-  Assessment: 4 graded assessments
+University requirements
 
 CAES9542 Technical English for Computer Science (6 credits)
   Prerequisite: None
-  Assessment: 5 graded assessments
+
+AILT1001 Digital literacy course (3 credits)
+  Prerequisite: None
+
+AILT9019 AI Literacy for Computing and Data Science (3 credits)
+  Prerequisite: None

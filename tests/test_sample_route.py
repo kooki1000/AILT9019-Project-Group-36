@@ -24,7 +24,7 @@ builder = _load_builder()
 
 def test_route_document_parses_without_warnings_and_every_course_is_required():
     parsed = parse_text(ROUTE.read_text(encoding="utf-8"))
-    assert len(parsed.courses) == 25
+    assert len(parsed.courses) == 26
     assert parsed.warnings == []
     assert not any(course.elective for course in parsed.courses)
 
@@ -37,15 +37,27 @@ def test_route_meets_every_credit_requirement_of_the_programme():
         assert credits == group["needed"], group["name"]
 
 
-def test_route_plans_into_eight_full_legal_semesters():
+def test_route_plans_into_eight_legal_semesters_with_the_fixed_courses_in_place():
     data = builder.build()
     by_code = {course["code"]: course for course in data["courses"]}
     assert data["ok"]
     assert len(data["plan"]) == 8
     for semester in data["plan"]:
-        assert sum(by_code[code]["credits"] for code in semester) == 30
+        assert sum(by_code[code]["credits"] for code in semester) <= 33
+        assert len(semester) <= 6
     placed = [code for semester in data["plan"] for code in semester]
     assert sorted(placed) == sorted(by_code)
+    for code, index in builder.PINNED.items():
+        assert code in data["plan"][index]
+
+
+def test_digital_literacy_and_final_year_project_follow_the_syllabus():
+    data = builder.build()
+    by_code = {course["code"]: course for course in data["courses"]}
+    assert by_code["AILT1001"]["credits"] == 3 and by_code["AILT9019"]["credits"] == 3
+    final_year = [c for c in data["courses"] if c["label"] == "COMP4801"]
+    assert sum(c["credits"] for c in final_year) == 12
+    assert len(final_year) == 2
 
 
 def test_plan_is_never_less_even_than_document_order():
