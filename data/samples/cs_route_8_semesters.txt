@@ -1,0 +1,171 @@
+BEng in Computer Science: sample 8-semester route
+
+A sample requirement document for the course planner. Course codes, titles, credits and
+prerequisites come from the HKU BEng (Computer Science) 2025-26 syllabus; prerequisite
+alternatives that are not in this route are left out. The assessment counts are made up
+for the demo, because the syllabus gives percentages instead of counts. The route itself
+is not an official study plan.
+
+Core courses
+
+CAES9542 Technical English for Computer Science (6 credits)
+  Prerequisite: None
+  Assessment: 5 graded assessments
+
+COMP1110 Computing and data science in everyday life (6 credits)
+  Prerequisite: None
+  Assessment: 3 graded assessments
+
+COMP1117 Computer programming (6 credits)
+  Prerequisite: None
+  Assessment: 5 graded assessments
+
+COMP2113 Programming technologies (6 credits)
+  Prerequisite: COMP1117
+  Assessment: 6 graded assessments
+
+MATH1013 University mathematics II (6 credits)
+  Prerequisite: None
+  Assessment: 4 graded assessments
+
+MATH2012 Fundamental concepts of mathematics (6 credits)
+  Prerequisite: None
+  Assessment: 4 graded assessments
+
+MATH2014 Multivariable calculus and linear algebra (6 credits)
+  Prerequisite: None
+  Assessment: 4 graded assessments
+
+COMP2119 Introduction to data structures and algorithms (6 credits)
+  Prerequisite: COMP2113
+  Assessment: 5 graded assessments
+
+COMP2120 Computer organization (6 credits)
+  Prerequisite: COMP1117
+  Assessment: 4 graded assessments
+
+COMP2121 Discrete mathematics (6 credits)
+  Prerequisite: None
+  Assessment: 4 graded assessments
+
+SDST2601 Probability and statistics I (6 credits)
+  Prerequisite: None
+  Assessment: 4 graded assessments
+
+COMP3230 Principles of operating systems (6 credits)
+  Prerequisite: COMP2113 and COMP2120
+  Assessment: 5 graded assessments
+
+COMP3297 Software engineering (6 credits)
+  Prerequisite: COMP2113
+  Assessment: 6 graded assessments
+
+COMP3314 Introduction to machine learning (6 credits)
+  Prerequisite: (MATH2014 or MATH1013) and COMP2119
+  Assessment: 5 graded assessments
+
+COMP4801 Final year project (12 credits)
+  Prerequisite: None
+  Assessment: 3 graded assessments
+
+Courses chosen for this route
+
+COMP2396 Object-oriented programming and Java (6 credits)
+  Prerequisite: COMP2113
+  Assessment: 5 graded assessments
+
+COMP2501 Introduction to data science (6 credits)
+  Prerequisite: COMP1117
+  Assessment: 4 graded assessments
+
+COMP3231 Computer architecture (6 credits)
+  Prerequisite: COMP2120
+  Assessment: 4 graded assessments
+
+COMP3234 Computer and communication networks (6 credits)
+  Prerequisite: COMP2113 and COMP2120
+  Assessment: 5 graded assessments
+
+COMP3251 Algorithm design (6 credits)
+  Prerequisite: COMP2119
+  Assessment: 4 graded assessments
+
+COMP3270 Introduction to artificial intelligence (6 credits)
+  Prerequisite: COMP2119
+  Assessment: 4 graded assessments
+
+COMP3278 Introduction to database management systems (6 credits)
+  Prerequisite: COMP2119
+  Assessment: 5 graded assessments
+
+COMP3322 Modern technologies on World Wide Web (6 credits)
+  Prerequisite: COMP1117
+  Assessment: 5 graded assessments
+
+COMP3323 Advanced database systems (6 credits)
+  Prerequisite: COMP3278
+  Assessment: 5 graded assessments
+
+COMP3329 Computer game design and programming (6 credits)
+  Prerequisite: COMP2113
+  Assessment: 6 graded assessments
+
+COMP3330 Interactive mobile application design and programming (6 credits)
+  Prerequisite: COMP2396
+  Assessment: 6 graded assessments
+
+COMP3340 Introduction to deep learning (6 credits)
+  Prerequisite: COMP2119 and (MATH2014 or MATH1013)
+  Assessment: 5 graded assessments
+
+COMP3355 Cyber security (6 credits)
+  Prerequisite: COMP2119
+  Assessment: 4 graded assessments
+
+COMP3258 Functional programming (6 credits)
+  Prerequisite: COMP2121
+  Assessment: 4 graded assessments
+
+COMP3259 Principles of programming languages (6 credits)
+  Prerequisite: COMP2119
+  Assessment: 3 graded assessments
+
+COMP3235 Compiling techniques (6 credits)
+  Prerequisite: COMP2119
+  Assessment: 5 graded assessments
+
+COMP3271 Computer graphics (6 credits)
+  Prerequisite: COMP2119
+  Assessment: 5 graded assessments
+
+COMP3317 Introduction to computer vision (6 credits)
+  Prerequisite: COMP2119 and (MATH2014 or MATH1013)
+  Assessment: 4 graded assessments
+
+COMP3354 Statistical learning (6 credits)
+  Prerequisite: MATH1013
+  Assessment: 4 graded assessments
+
+COMP3361 Natural language processing (6 credits)
+  Prerequisite: (COMP3314 or COMP3340) and MATH1013
+  Assessment: 4 graded assessments
+
+COMP3405 Engineering quality software (6 credits)
+  Prerequisite: COMP3297
+  Assessment: 5 graded assessments
+
+COMP3358 Distributed and parallel computing (6 credits)
+  Prerequisite: (COMP3230 or COMP3234)
+  Assessment: 5 graded assessments
+
+COMP4510 Principles of machine learning (6 credits)
+  Prerequisite: COMP3314
+  Assessment: 4 graded assessments
+
+COMP4511 Principles of deep learning (6 credits)
+  Prerequisite: COMP3340
+  Assessment: 3 graded assessments
+
+COMP3365 Cyber attack and defense (6 credits)
+  Prerequisite: COMP3230 and COMP3234 and COMP3355
+  Assessment: 5 graded assessments
