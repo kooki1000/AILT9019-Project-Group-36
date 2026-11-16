@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HKU Course Planner</title>
-<meta name="description" content="A local app that reads an HKU programme's requirement document and drafts a semester-by-semester plan with the difficulty spread evenly. AILT9019 Group 36.">
+<meta name="description" content="A local app that reads an HKU programme's requirement document and drafts a semester-by-semester plan with the difficulty spread evenly. Group 36, AILT9019 AI Literacy for Computing and Data Science.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2314231C'/%3E%3Crect x='5' y='5' width='10' height='14' fill='%23EAF4D8'/%3E%3Crect x='17' y='5' width='10' height='9' fill='%236FB58A'/%3E%3Crect x='5' y='21' width='10' height='6' fill='%236FB58A'/%3E%3Crect x='17' y='16' width='10' height='11' fill='%230D4F38' stroke='%23EAF4D8'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -109,23 +109,25 @@ h1 span { display: block; }
 .readout .base .v { color: var(--baseline); }
 .readout .mine .v { color: var(--plan); }
 
-.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); border: 2px solid var(--ink); background: var(--panel); }
+.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); border: 2px solid var(--ink); background: var(--panel); }
 .col { display: flex; flex-direction: column; min-width: 0; }
-.col { border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.col { border-right: 1px solid var(--rule); }
+.sem { display: flex; flex-direction: column; }
+.sem + .sem { border-top: 1px solid var(--rule); }
 .col h3 { margin: 0; padding: 10px 12px; background: var(--ink); color: var(--paper); font-family: var(--display); font-size: 0.95rem; font-weight: 700; font-stretch: 105%; display: flex; justify-content: space-between; gap: 8px; }
 .col h3 { flex-wrap: wrap; }
 .col h3 span:first-child { white-space: nowrap; }
 .col h3 .sum { font-weight: 500; font-variant-numeric: tabular-nums; }
-.stack { display: flex; flex-direction: column; gap: 6px; padding: 8px; flex: 1; min-height: 120px; }
+.stack { display: flex; flex-direction: column; gap: 4px; padding: 6px 8px 8px; min-height: 242px; }
 .tile {
   font-family: var(--display); text-align: left; width: 100%;
   border: 1px solid rgba(20, 35, 28, 0.35); border-radius: 2px;
-  padding: 7px 9px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 0 8px; align-items: start;
+  padding: 4px 8px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 0 8px; align-items: start;
   color: var(--ink);
 }
-.tile .code { font-weight: 800; font-size: 0.98rem; letter-spacing: 0.01em; }
-.tile .num { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
-.tile .title { grid-column: 1 / -1; font-size: 0.8rem; font-weight: 400; font-stretch: 90%; line-height: 1.25; margin-top: 2px; }
+.tile .code { font-weight: 800; font-size: 0.9rem; letter-spacing: 0.01em; }
+.tile .num { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 0.88rem; }
+.tile .title { grid-column: 1 / -1; font-size: 0.76rem; font-weight: 400; font-stretch: 88%; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile.light { color: #14231C; }
 .tile.dark { color: #F4F8F2; border-color: rgba(255, 255, 255, 0.4); }
 .tile[aria-pressed="true"] { outline: 3px solid var(--baseline); outline-offset: 1px; }
@@ -133,7 +135,7 @@ h1 span { display: block; }
 .tile.bad .num::before { content: "! "; }
 .dropbtn { font-family: var(--display); font-weight: 700; font-size: 0.88rem; margin: 0 8px 8px; padding: 9px 10px; background: transparent; color: var(--ink); border: 2px dashed var(--baseline); border-radius: 2px; cursor: pointer; text-align: left; }
 .dropbtn:hover { background: var(--baseline); color: #14231C; }
-.colfoot { font-family: var(--display); font-size: 0.82rem; color: var(--muted); padding: 8px 12px; border-top: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+.colfoot { font-family: var(--display); font-size: 0.8rem; color: var(--muted); padding: 5px 12px 7px; font-variant-numeric: tabular-nums; }
 .colfoot.over { color: var(--bad); font-weight: 700; }
 .status { margin-top: 14px; font-family: var(--display); font-size: 0.98rem; min-height: 3.2em; }
 .status ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
@@ -254,14 +256,15 @@ footer p { margin: 0; max-width: 40em; }
       <a href="#local">Run it yourself</a>
       <a href="#evidence">Does it work?</a>
       <a href="#limits">Limits</a>
+      <a href="#learned">What we learned</a>
       <a href="https://github.com/kooki1000/AILT9019-Project-Group-36">Source code</a>
     </nav>
   </header>
 
   <main id="main">
     <div class="hero" id="top">
-      <h1><span>What to take is published.</span> <span>When to take it isn't.</span></h1>
-      <p class="lede">HKU Course Planner reads your programme's requirement document and drafts a semester-by-semester plan, spread so no semester carries far more than the others. It runs on your own computer and sends nothing anywhere.</p>
+      <h1><span>HKU tells you what to take.</span> <span>It doesn't tell you when.</span></h1>
+      <p class="lede">We built a small app that reads your programme's requirement document and spreads the courses over your semesters, so one semester doesn't end up a lot heavier than the rest. It runs on your own laptop, and nothing you upload leaves it.</p>
       <div class="actions">
         <a class="btn solid" href="#local">Run it yourself</a>
         <a class="btn line" href="https://github.com/kooki1000/AILT9019-Project-Group-36">Source code on GitHub</a>
@@ -269,9 +272,9 @@ footer p { margin: 0; max-width: 40em; }
 
       <div class="board-wrap" id="board-wrap">
         <div class="board-intro">
-          <p><strong>This is a real run, not a mock-up.</strong> Ten physics and maths courses from one of our test documents, at most 24 credits and 5 courses a semester. Compare our plan with taking courses in the order the document lists them, then select a course and move it. Like the app, the page never refuses a move. It tells you what broke.</p>
+          <p>Here's what the app does with a computer science route: 40 courses from the 2025-26 BEng (Computer Science) syllabus, spread over four years of two semesters. This is the app's actual output. Flip to document order to see what you'd get by taking courses in the order they're listed, then click any course and move it to another semester. Like the app, this page lets you make the move and then tells you what you broke.</p>
         </div>
-        <noscript><p>The interactive plan needs JavaScript. The screenshots further down show the same app.</p></noscript>
+        <noscript><p>The interactive plan needs JavaScript. The screenshots further down show the app itself.</p></noscript>
         <div class="controls">
           <div class="seg" role="group" aria-label="Which plan to show">
             <button type="button" id="show-plan" aria-pressed="true">Our plan</button>
@@ -283,29 +286,29 @@ footer p { margin: 0; max-width: 40em; }
             <div class="mine"><span class="k">Your current spread</span><span class="v" id="v-now">–</span></div>
           </div>
         </div>
-        <div class="board" id="board" aria-label="Semester plan"></div>
+        <div class="board" id="board" aria-label="Eight-semester plan"></div>
         <div class="status" id="status" role="status" aria-live="polite"></div>
         <div class="legend">
-          <span>Shade shows the 1 to 10 difficulty score:</span>
+          <span>Shade is the 1 to 10 difficulty score:</span>
           <span>lighter</span><span class="ramp" aria-hidden="true"></span><span>darker</span>
-          <span class="note">Spread is the variance of each semester's total difficulty, so lower means more even. Scores here come from the document alone, with no reviews, as in our evaluation run.</span>
+          <span class="note">Spread is the variance of each semester's total difficulty, so lower means more even. The limit here is 5 courses and 36 credits a semester (the real final year project is 12 credits). Codes, titles, credits and prerequisites come from the syllabus. The assessment counts are made up, because the syllabus only gives percentages, and no reviews are used. The route is a demo, not an official study plan.</span>
         </div>
       </div>
     </div>
 
     <section class="block" id="problem" aria-labelledby="h-problem">
-      <h2 id="h-problem">The gap</h2>
+      <h2 id="h-problem">The problem</h2>
       <div class="prose">
-        <p>HKU publishes what each programme requires. It does not say when to take those courses, or how heavy a given semester will feel. Students fill the gap from memory, a spreadsheet or a short chat with an adviser, and too often learn a semester is overloaded after they have enrolled.</p>
-        <p>Programme pages tell you what to take. RIC tells you how hard a course feels. Nothing turns either one into a plan you can follow, and we could not find a tool that reads the requirements, brings in course reviews and spreads the courses by workload. This is our own idea, not adapted from the course topic list. It came out of planning problems we and other HKU undergraduates kept running into.</p>
+        <p>HKU publishes what every programme requires. What it doesn't say is when to take each course, or how heavy a semester will be once you stack them up. Most of us work it out from memory, a spreadsheet or a quick chat with an adviser, and sometimes you only find out a semester is overloaded after you've enrolled.</p>
+        <p>Programme pages tell you what to take, and RIC tells you how hard a course feels, but nothing joins the two into a plan. We looked for a tool that reads the requirements, uses course reviews and spreads courses by workload, and couldn't find one. The idea is ours. It isn't from the course topic list, and it came from planning headaches we and our friends kept running into.</p>
         <div class="split">
           <div>
-            <h3>It is for</h3>
-            <p>Undergraduates who already know their programme and want a draft plan they can review and edit.</p>
+            <h3>Who it's for</h3>
+            <p>Undergraduates who already know their programme and want a draft plan they can look over and edit.</p>
           </div>
           <div>
-            <h3>It is not for</h3>
-            <p>Graduation audits, replacing an academic adviser, double majors, transfer credit or requirement waivers.</p>
+            <h3>Who it's not for</h3>
+            <p>It isn't a graduation audit and it doesn't replace an academic adviser. Don't use it for double majors, transfer credit or requirement waivers.</p>
           </div>
         </div>
       </div>
@@ -317,21 +320,21 @@ footer p { margin: 0; max-width: 40em; }
         <ol class="steps">
           <li>
             <div>
-              <h3>It reads the requirement document</h3>
-              <p>Upload a PDF, plain text or CSV, or paste the text. The parser pulls out each course with its credits, assessments and prerequisites. It copes with four layouts, even mixed in one file: labelled blocks, table rows, course-description pages and plain lists under headings like "Core courses" or "Disciplinary Electives".</p>
-              <p>What it cannot check, such as a prerequisite written as "Level 2 in HKDSE Mathematics", becomes a visible warning. It is never dropped quietly or guessed.</p>
+              <h3>You give it your requirements</h3>
+              <p>Upload the faculty's syllabus as a PDF, text file or CSV, or paste the text in. The parser (pdfplumber pulls the text out of PDFs) finds each course and its credits, assessments and prerequisites. Syllabuses are laid out in all sorts of ways, so it handles four: labelled blocks, table rows, course-description pages, and plain lists under headings like "Core courses".</p>
+              <p>Some prerequisites aren't course codes, like "Level 2 in HKDSE Mathematics". The app can't check those, so it shows a warning and doesn't guess.</p>
             </div>
           </li>
           <li>
             <div>
-              <h3>It looks up reviews from a local file</h3>
-              <p>Reviews come from a CSV that sits next to the app. The app never goes online for them and never asks for an RIC or HKU password. Chinese reviews are translated once, with an offline model, when the dataset is built. The app reads only the finished file, and keeps the original wording beside each translation.</p>
+              <h3>It looks up reviews in a local file</h3>
+              <p>Reviews come from a CSV that sits next to the app. The app doesn't go online for them and never asks for your RIC or HKU password. Chinese reviews get translated once, with an offline model, when we build the file. The app only reads the finished file, and it shows the original wording next to the English.</p>
             </div>
           </li>
           <li>
             <div>
-              <h3>It scores each course from 1 to 10</h3>
-              <p>Credits count for 35%, graded assessments for 35% and reviews for 30%. Reviews are averaged with a trimmed mean, so one extreme rating neither decides the score nor gets thrown away. With no reviews, the other two weights are rescaled and the course is labelled review-free. This calculator uses the same formula as the app.</p>
+              <h3>It scores each course out of 10</h3>
+              <p>Credits make up 35% of the score, graded assessments 35% and reviews 30%. The reviews are averaged with a trimmed mean, so one extreme rating can't decide the score, but it isn't thrown away either. If a course has no reviews, the score uses just credits and assessments (rescaled to still run from 1 to 10) and the course is labelled review-free. The calculator below uses the same formula as the app.</p>
               <div class="calc" id="calc">
                 <fieldset>
                   <legend>Try a course</legend>
@@ -354,13 +357,13 @@ footer p { margin: 0; max-width: 40em; }
           <li>
             <div>
               <h3>It builds the plan</h3>
-              <p>First it checks which courses can ever be scheduled: circular prerequisites, missing prerequisites and courses bigger than a semester are named, not skipped. Then it orders courses by prerequisites, finds the fewest semesters that fit your limits, and moves courses around inside that length to even out each semester's total difficulty. The result is compared with the document-order baseline you saw at the top.</p>
+              <p>First it checks which courses can be scheduled at all. A circular prerequisite, a prerequisite that isn't in the document, or a course too big for one semester gets named in a warning. Then it orders the courses by prerequisites, finds the fewest semesters that fit your limits, and shuffles courses around inside that to even out each semester's total difficulty. Last, it compares the result with taking the courses in document order, which is the comparison at the top of this page.</p>
             </div>
           </li>
           <li>
             <div>
-              <h3>You adjust it, and every change is re-checked</h3>
-              <p>Move a course, add an elective, or give a course your own difficulty rating, which replaces the estimate. Prerequisites and load are checked again after each edit. The plan downloads as CSV.</p>
+              <h3>You change what you don't like</h3>
+              <p>Move a course, add an elective, or type in your own difficulty rating, which replaces the estimate. Every edit re-checks prerequisites and load straight away, and you can download the plan as a CSV.</p>
             </div>
           </li>
         </ol>
@@ -370,11 +373,11 @@ footer p { margin: 0; max-width: 40em; }
     <section class="block" id="run" aria-labelledby="h-run">
       <h2 id="h-run">See it run</h2>
       <div class="prose wide">
-        <p>The app ships with a short, fictional Computer Science programme as its sample document. On a first run, pressing <strong>Build my plan</strong> should give you:</p>
+        <p>The app comes with a short, made-up Computer Science programme as its sample document. On a first run, press <strong>Build my plan</strong> and you should see:</p>
         <ul class="success">
-          <li>A note that it loaded 20 reviews covering all 7 courses.</li>
+          <li>A note saying it loaded 20 reviews covering all 7 courses.</li>
           <li>A green banner saying every required course is scheduled once, in prerequisite order, within your limits.</li>
-          <li>Three semesters: COMP1117 and MATH1013; then COMP2113, COMP2119 and STAT2601; then COMP3230 and COMP3314.</li>
+          <li>Three semesters: COMP1117 and MATH1013, then COMP2113, COMP2119 and STAT2601, then COMP3230 and COMP3314.</li>
         </ul>
         <div class="vidslot" id="vidslot" hidden>
           <h3>Recorded walkthrough</h3>
@@ -385,13 +388,13 @@ footer p { margin: 0; max-width: 40em; }
             <div class="shot" tabindex="0" role="group" aria-label="Screenshot of the draft plan, scrollable">
               <img src="assets/app-plan.png" width="1050" height="1974" alt="The app's draft plan: a green banner reading OK, then three semester tables listing courses, credits and difficulty scores.">
             </div>
-            <figcaption>The sample run, as the app shows it. On this small programme the balanced plan and document order come out identical (5.58 and 5.58), and the app says "not more even" instead of claiming a win.</figcaption>
+            <figcaption>The sample run as the app shows it. This programme is tiny, so our plan and document order come out the same (5.58 each). The app says "not more even" and doesn't pretend otherwise.</figcaption>
           </figure>
           <figure>
             <div class="shot" tabindex="0" role="group" aria-label="Screenshot of a failure case, scrollable">
               <img src="assets/app-cycle.png" width="1065" height="600" alt="The app showing two red problem messages: two courses could not be scheduled because they depend on each other. Only the unaffected course is placed, in Semester 1.">
             </div>
-            <figcaption>A case it should refuse. In this test document EXAM2001 needs EXAM3001, and EXAM3001 needs EXAM2001. The app schedules what it can, names both courses and says why. It does not invent an order.</figcaption>
+            <figcaption>A case it should refuse. In this test document EXAM2001 needs EXAM3001, and EXAM3001 needs EXAM2001. The app plans what it can, names both courses and says why. It doesn't make up an order.</figcaption>
           </figure>
         </div>
       </div>
@@ -400,7 +403,7 @@ footer p { margin: 0; max-width: 40em; }
     <section class="block" id="local" aria-labelledby="h-local">
       <h2 id="h-local">Run it yourself</h2>
       <div class="prose wide">
-        <p>You need Python 3.10 or newer. There is no account, no API key and no database to set up.</p>
+        <p>You need Python 3.10 or newer. There's no account, API key or database to set up.</p>
         <div class="codebox">
           <button type="button" data-copy="code-install">Copy</button>
 <pre id="code-install">git clone https://github.com/kooki1000/AILT9019-Project-Group-36.git
@@ -410,7 +413,7 @@ source .venv/bin/activate        # on Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 streamlit run src/course_planner/app.py</pre>
         </div>
-        <p>The app opens in your browser. Leave <strong>Use the sample document</strong> selected and press <strong>Build my plan</strong>. To use your own programme, choose <strong>Upload a file</strong> and give it the faculty's syllabus PDF. If a PDF lists far more courses than one student takes, the app asks which ones you plan to take.</p>
+        <p>The app opens in your browser. Leave <strong>Use the sample document</strong> selected and press <strong>Build my plan</strong>. That's the run described above. To try your own programme, choose <strong>Upload a file</strong> and give it the faculty's syllabus PDF. If the PDF lists far more courses than one student takes, the app asks which ones you're planning to take.</p>
         <p>To check the install, run the tests, or see how the parser reads a syllabus without opening the app:</p>
         <div class="codebox">
           <button type="button" data-copy="code-test">Copy</button>
@@ -418,38 +421,42 @@ streamlit run src/course_planner/app.py</pre>
 python -m course_planner.evaluation tests/fixtures/requirements
 python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
         </div>
-        <p>The <a href="https://github.com/kooki1000/AILT9019-Project-Group-36#readme">README</a> covers the review file format, where your data is stored (a local SQLite file you can delete from inside the app) and the agent-skill version of the parser.</p>
+        <p>The <a href="https://github.com/kooki1000/AILT9019-Project-Group-36#readme">README</a> has the rest: the review file format, where your data is stored (a local SQLite file you can delete from inside the app) and the agent-skill version of the parser.</p>
       </div>
     </section>
 
     <section class="block" id="evidence" aria-labelledby="h-evidence">
       <h2 id="h-evidence">Does it work?</h2>
       <div class="prose wide">
-        <p>Before testing we fixed what "works" means, and published it in the proposal. These are the results against that bar, including the part we cannot claim.</p>
+        <p>In the proposal we said what "working" would mean before we started testing. Here's how we did against each bar, including the one we can't fully claim.</p>
         <div class="facts">
           <div class="fact">
             <div class="what">Legal plans<small>5 of 5 test documents</small></div>
-            <p>Every required course appears exactly once, none comes before its prerequisite, and no semester goes over the limit. The proposal needed 4 of 5.</p>
+            <p>In every plan each required course shows up once, nothing comes before its prerequisite, and no semester goes over the limit. The proposal asked for 4 out of 5.</p>
           </div>
           <div class="fact">
             <div class="what">More even than document order<small>4 of 5 test documents</small></div>
-            <p>The proposal needed 4 of 5. The one tie is the smallest document (6 courses), which has nothing to balance. The chart shows each plan's spread against the baseline's.</p>
+            <p>This also needed 4 out of 5. The one tie is the smallest document (6 courses), where there isn't much to balance. The chart compares each plan's spread with the baseline's.</p>
+          </div>
+          <div class="fact">
+            <div class="what">A full degree<small>40 courses, 8 semesters</small></div>
+            <p>The computer science route at the top fits into exactly eight semesters of five courses, with prerequisites respected. Its spread is <span data-var="plan"></span> against <span data-var="baseline"></span> for document order.</p>
           </div>
           <div class="fact">
             <div class="what">Parsing accuracy<small>100% on our labelled documents</small></div>
-            <p>The bar was 95% of courses and prerequisite groups extracted correctly. These documents are ones we wrote, some shaped like real syllabuses, each with hand-written answers to compare against. That shows the layouts work. It says little about any given faculty's file.</p>
+            <p>We said 95% of courses and prerequisite links had to come out right. We wrote these documents ourselves (some copy the layout of real syllabuses) and labelled the right answers by hand. That shows the layouts work, but it doesn't tell you how the parser does on any one faculty's real file.</p>
           </div>
           <div class="fact">
             <div class="what">Real HKU syllabuses<small>eleven tried, no accuracy figure</small></div>
-            <p>BEcon, BEng (CompSc), BEng (DASE), BEng (CE, EE and ElecE), BA, BJ, BJ (MAI), BSocSc, LLB, BA &amp; LLB and the ENGG regulations. We checked the output against the PDFs and fixed what broke. There are no hand labels for these, so we do not report a percentage.</p>
+            <p>BEcon, BEng (CompSc), BEng (DASE), BEng (CE, EE and ElecE), BA, BJ, BJ (MAI), BSocSc, LLB, BA &amp; LLB and the ENGG regulations. We read the output against the PDFs and fixed what was wrong. We haven't hand-labelled these, so we're not giving a percentage.</p>
           </div>
           <div class="fact">
             <div class="what">Failing safely<small>two cases from the proposal</small></div>
-            <p>Circular prerequisites and courses that can never fit are reported in words, as in the screenshot above. A course with no reviews is scored from the document and marked review-free.</p>
+            <p>Circular prerequisites and courses that can never fit are reported in plain words (see the screenshot above). A course with no reviews gets a score from the document alone and is marked review-free.</p>
           </div>
           <div class="fact">
             <div class="what">Automated tests<small>over 350, all passing</small></div>
-            <p>They cover the parser, prerequisite logic, scoring, planner, CSV export and the Streamlit interface itself.</p>
+            <p>They cover the parser, prerequisites, scoring, the planner, CSV export and the Streamlit interface.</p>
           </div>
         </div>
         <div class="chart" role="img" aria-label="Spread of semester difficulty for our plan and for document order, on five test documents. Our plan is lower on four.">
@@ -460,25 +467,35 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
     </section>
 
     <section class="block" id="limits" aria-labelledby="h-limits">
-      <h2 id="h-limits">Where it falls short</h2>
+      <h2 id="h-limits">What it can't do yet</h2>
       <div class="prose">
         <ul>
-          <li>The reviews in the repository are made-up demonstration data. Real RIC reviews need permission to collect and reuse, and we have not got that yet. Until then the difficulty score is built on invented ratings.</li>
-          <li>The score uses each review's 1 to 5 rating. It does not read the review text, and translation has not been tested on real colloquial Cantonese.</li>
-          <li>Most syllabuses list few or no prerequisites. BEcon lists none, so a plan can put a final-year course in semester 1. Treat the order as a starting point.</li>
-          <li>Catalogue-sized documents, such as the BA, can't be planned without your course list. Some options groups without a clear heading count as required.</li>
-          <li>Prerequisite checks cover course codes. Year standing, department approval and exam grades are reported, not enforced. Semester availability and timetable clashes are out of scope.</li>
-          <li>Not built: a second review source to cross-check RIC, and the small study with HKU students that the proposal listed as a stretch goal.</li>
+          <li>The reviews in the repo are demo data we made up. We'd need permission to collect and reuse real RIC reviews and we don't have it yet, so for now the review part of the score runs on invented ratings.</li>
+          <li>The score only uses each review's 1 to 5 rating. It doesn't read the review text, and we haven't tested the translation on real, colloquial Cantonese.</li>
+          <li>Most syllabuses list few prerequisites (BEcon lists none) and the planner doesn't know your year of study. So it can put a final-year course in semester 1, or an intro course like COMP1110 in Year 3, as in the route above. Treat the order as a starting point.</li>
+          <li>A document the size of a faculty catalogue, like the BA, can't be planned until you tell the app which courses you're taking. Some option lists with no clear heading get counted as required.</li>
+          <li>Prerequisite checking covers course codes only. Year standing, department approval and exam grades just get a warning. Timetable clashes and which semester a course actually runs in aren't covered at all.</li>
+          <li>We didn't get to a second review source to cross-check RIC, or the small study with 3 to 5 HKU students. Both were stretch goals in the proposal.</li>
         </ul>
-        <p>The score is an estimate from past student reviews and the requirement document. It is not an official HKU rating, and the plan is not a graduation audit. Check it against the current programme rules and with an academic adviser.</p>
-        <h3>How it was built</h3>
-        <p>Most of the code was written with an AI coding assistant (Claude Code) and went through pull requests before merging. The report has the full AI-use disclosure. The repository holds no passwords, API keys or personal data, and the app keeps uploaded documents only on the machine running it.</p>
+        <p>The score is an estimate from past student reviews and the requirement document. It isn't an official HKU rating, and the plan isn't a graduation audit, so check it against the current programme rules and with an academic adviser.</p>
+        <h3>How we built it</h3>
+        <p>Most of the code was written with Claude Code, an AI coding assistant, and went through pull requests before it was merged. The full AI-use disclosure is in our report. The repo has no passwords, API keys or personal data, and the app keeps uploaded files only on the machine it runs on.</p>
+      </div>
+    </section>
+
+    <section class="block" id="learned" aria-labelledby="h-learned">
+      <h2 id="h-learned">What we learned</h2>
+      <div class="prose">
+        <p>Real syllabuses are messier than anything we'd write ourselves. Our first parsing check found only 88% of prerequisite links, under our own 95% bar. Then real files showed layouts we hadn't thought of: year columns in tables, prerequisites that only appear inside course descriptions, and courses with no credits listed. The parser now handles four layouts instead of one.</p>
+        <p>Testing each piece on its own wasn't enough. Features we'd built in separate pull requests, like CSV export with your own ratings and ratings on electives, broke when we put them together. We only caught that in a review of the whole project.</p>
+        <p>Saying what the app can't check beats guessing. A warning for "Level 2 in HKDSE Mathematics" is more honest than pretending the app understood it.</p>
+        <p>We also changed our mind on RIC. Our first draft used it as a live source, which made reviewers ask about passwords. Switching to a local dataset fixed that, but it means someone has to collect real reviews beforehand, and that part isn't finished.</p>
       </div>
     </section>
   </main>
 
   <footer>
-    <p>AILT9019 AI Literacy II, Group 36. The University of Hong Kong.</p>
+    <p>AILT9019 AI Literacy for Computing and Data Science, Group 36.</p>
     <p><a href="https://github.com/kooki1000/AILT9019-Project-Group-36">Source code and README on GitHub</a></p>
   </footer>
 </div>
@@ -500,19 +517,20 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
     return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
   }
 
-  /* ---------- the board ---------- */
-  var run = window.BALANCE_RUN;
+  /* ---------- the board: 4 years x 2 semesters ---------- */
+  var run = window.ROUTE_RUN;
   var boardEl = document.getElementById("board");
   if (run && boardEl) {
     var byCode = {};
     run.courses.forEach(function (c) { byCode[c.code] = c; });
-    var COLS = 5;
+    var SEMS = 8;
     var mode = "plan", selected = null, state = null;
 
+    function label(i) { return "Year " + (Math.floor(i / 2) + 1) + " Semester " + (i % 2 + 1); }
     function fresh(which) {
       var src = which === "plan" ? run.plan : run.baseline;
       var out = [];
-      for (var i = 0; i < COLS; i++) out.push((src[i] || []).slice());
+      for (var i = 0; i < SEMS; i++) out.push((src[i] || []).slice());
       return out;
     }
     function variance(sems) {
@@ -542,8 +560,8 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
           });
         });
         var credits = sem.reduce(function (t, c) { return t + byCode[c].credits; }, 0);
-        if (credits > run.limits.credits) found.push("Semester " + (i + 1) + " has " + credits + " credits; the limit is " + run.limits.credits + ".");
-        if (sem.length > run.limits.courses) found.push("Semester " + (i + 1) + " has " + sem.length + " courses; the limit is " + run.limits.courses + ".");
+        if (credits > run.limits.credits) found.push(label(i) + " has " + credits + " credits, and the limit is " + run.limits.credits + ".");
+        if (sem.length > run.limits.courses) found.push(label(i) + " has " + sem.length + " courses, and the limit is " + run.limits.courses + ".");
       });
       return { list: found, bad: bad };
     }
@@ -554,63 +572,73 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
       boardEl.innerHTML = "";
       boardEl.classList.toggle("entering", !!animate);
       var order = 0;
-      state.forEach(function (sem, i) {
+      for (var y = 0; y < SEMS / 2; y++) {
         var col = document.createElement("div");
         col.className = "col";
-        var credits = sem.reduce(function (t, c) { return t + byCode[c].credits; }, 0);
-        var load = sem.reduce(function (t, c) { return t + byCode[c].difficulty; }, 0);
-        var h = document.createElement("h3");
-        h.innerHTML = "<span>Semester " + (i + 1) + "</span><span class='sum'>" + (sem.length ? "load " + load.toFixed(1) : "empty") + "</span>";
-        col.appendChild(h);
-        var stack = document.createElement("div");
-        stack.className = "stack";
-        sem.forEach(function (code) {
-          var c = byCode[code], rgb = shade(c.difficulty);
-          var b = document.createElement("button");
-          b.type = "button";
-          b.className = "tile " + (luminance(rgb) > 0.32 ? "light" : "dark") + (check.bad[code] ? " bad" : "");
-          b.style.background = "rgb(" + rgb.join(",") + ")";
-          b.style.minHeight = (34 + c.credits * 6) + "px";
-          b.style.setProperty("--i", order++);
-          b.setAttribute("aria-pressed", selected === code ? "true" : "false");
-          b.setAttribute("aria-label", code + ", " + c.title + ", " + c.credits + " credits, difficulty " + c.difficulty.toFixed(1) + (check.bad[code] ? ", prerequisite problem" : "") + ". Select to move.");
-          b.innerHTML = "<span class='code'>" + code + "</span><span class='num'>" + c.difficulty.toFixed(1) + "</span><span class='title'>" + c.title + " · " + c.credits + " cr</span>";
-          b.addEventListener("click", function () { selected = selected === code ? null : code; draw(false); });
-          stack.appendChild(b);
-        });
-        col.appendChild(stack);
-        if (selected && semesterOf(selected) !== i) {
-          var d = document.createElement("button");
-          d.type = "button";
-          d.className = "dropbtn";
-          d.textContent = "Move " + selected + " here";
-          d.addEventListener("click", function () {
-            var from = semesterOf(selected);
-            state[from].splice(state[from].indexOf(selected), 1);
-            state[i].push(selected);
-            var moved = selected;
-            selected = null;
-            draw(false);
-            var again = boardEl.querySelectorAll(".tile");
-            for (var k = 0; k < again.length; k++) if (again[k].getAttribute("aria-label").indexOf(moved + ",") === 0) { again[k].focus(); break; }
-          });
-          col.appendChild(d);
+        for (var half = 0; half < 2; half++) {
+          col.appendChild(semester(y * 2 + half, check, function () { return order++; }));
         }
-        var foot = document.createElement("div");
-        foot.className = "colfoot" + (credits > run.limits.credits || sem.length > run.limits.courses ? " over" : "");
-        foot.textContent = credits + " credits, " + sem.length + " course" + (sem.length === 1 ? "" : "s");
-        col.appendChild(foot);
         boardEl.appendChild(col);
-      });
-
+      }
       document.getElementById("v-base").textContent = fmt(run.variance.baseline);
       document.getElementById("v-now").textContent = fmt(variance(state));
       var status = document.getElementById("status");
       if (check.list.length) {
         status.innerHTML = "<ul>" + check.list.map(function (m) { return "<li><span class='tag problem'>✕ Problem</span><span>" + m + "</span></li>"; }).join("") + "</ul>";
       } else {
-        status.innerHTML = "<ul><li><span class='tag ok'>✓ OK</span><span>Every course is scheduled once, after its prerequisites, within the limits. " + (selected ? "Choose a semester to move " + selected + " to." : "Select a course to move it.") + "</span></li></ul>";
+        status.innerHTML = "<ul><li><span class='tag ok'>✓ OK</span><span>Every course is scheduled once, after its prerequisites, within the limits. " + (selected ? "Pick a semester to move " + selected + " to." : "Click a course to move it.") + "</span></li></ul>";
       }
+    }
+
+    function semester(i, check, next) {
+      var sem = state[i];
+      var box = document.createElement("div");
+      box.className = "sem";
+      var credits = sem.reduce(function (t, c) { return t + byCode[c].credits; }, 0);
+      var load = sem.reduce(function (t, c) { return t + byCode[c].difficulty; }, 0);
+      var h = document.createElement("h3");
+      h.innerHTML = "<span>" + label(i) + "</span><span class='sum'>" + (sem.length ? "load " + load.toFixed(1) : "empty") + "</span>";
+      box.appendChild(h);
+      var stack = document.createElement("div");
+      stack.className = "stack";
+      sem.forEach(function (code) {
+        var c = byCode[code], rgb = shade(c.difficulty);
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "tile " + (luminance(rgb) > 0.32 ? "light" : "dark") + (check.bad[code] ? " bad" : "");
+        b.style.background = "rgb(" + rgb.join(",") + ")";
+        b.style.minHeight = (20 + c.credits * 3.5) + "px";
+        b.style.setProperty("--i", next());
+        b.title = c.title;
+        b.setAttribute("aria-pressed", selected === code ? "true" : "false");
+        b.setAttribute("aria-label", code + ", " + c.title + ", " + c.credits + " credits, difficulty " + c.difficulty.toFixed(1) + (check.bad[code] ? ", prerequisite problem" : "") + ". Select to move.");
+        b.innerHTML = "<span class='code'>" + code + "</span><span class='num'>" + c.difficulty.toFixed(1) + "</span><span class='title'>" + c.title + "</span>";
+        b.addEventListener("click", function () { selected = selected === code ? null : code; draw(false); });
+        stack.appendChild(b);
+      });
+      box.appendChild(stack);
+      if (selected && semesterOf(selected) !== i) {
+        var d = document.createElement("button");
+        d.type = "button";
+        d.className = "dropbtn";
+        d.textContent = "Move " + selected + " here";
+        d.addEventListener("click", function () {
+          var from = semesterOf(selected);
+          state[from].splice(state[from].indexOf(selected), 1);
+          state[i].push(selected);
+          var moved = selected;
+          selected = null;
+          draw(false);
+          var again = boardEl.querySelectorAll(".tile");
+          for (var k = 0; k < again.length; k++) if (again[k].getAttribute("aria-label").indexOf(moved + ",") === 0) { again[k].focus(); break; }
+        });
+        box.appendChild(d);
+      }
+      var foot = document.createElement("div");
+      foot.className = "colfoot" + (credits > run.limits.credits || sem.length > run.limits.courses ? " over" : "");
+      foot.textContent = credits + " credits, " + sem.length + " course" + (sem.length === 1 ? "" : "s");
+      box.appendChild(foot);
+      return box;
     }
 
     function show(which) {
@@ -624,6 +652,9 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
     document.getElementById("show-plan").addEventListener("click", function () { show("plan"); });
     document.getElementById("show-base").addEventListener("click", function () { show("base"); });
     document.getElementById("reset").addEventListener("click", function () { show(mode); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-var]"), function (el) {
+      el.textContent = fmt(run.variance[el.getAttribute("data-var")]);
+    });
     show("plan");
   }
 
