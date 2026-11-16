@@ -9,7 +9,8 @@ The app reads courses by course code. The mock study plan also has slots with no
 Core, Chinese language, free electives), so this script adds those as 6-credit courses with
 nothing known about them, which the scoring treats as mid-range. They are marked ``generic``.
 The 12-credit final year project runs through all of Year 4, so it is split into two 6-credit
-halves pinned to the two Year 4 semesters, and the two digital literacy courses are pinned too.
+halves pinned to the two Year 4 semesters, and the two digital literacy courses are limited to
+Year 1 and Year 2.
 
     python docs/build_plan_data.py
 """
@@ -82,9 +83,10 @@ GENERIC = {
     "Chinese Language": ("uni", "Chinese language enhancement course"),
     "Free Elective": ("free", "Any course from any department except Common Core"),
 }
-# Fixed in a semester (0-based): AILT1001 in Year 1 Semester 1, AILT9019 in Year 2 Semester 1,
-# and the year-long final year project across both Year 4 semesters.
-PINNED = {"AILT1001": 0, "AILT9019": 2, "COMP4801 part 1": 6, "COMP4801 part 2": 7}
+# The year-long final year project is pinned to both Year 4 semesters (0-based indexes). The two
+# digital literacy courses only have a year: AILT1001 in Year 1 and AILT9019 in Year 2.
+PINNED = {"COMP4801 part 1": 6, "COMP4801 part 2": 7}
+WINDOWS = {"AILT1001": (0, 1), "AILT9019": (2, 3)}
 
 
 def categories_by_code(text: str) -> dict[str, str]:
@@ -130,7 +132,9 @@ def build(path: Path = ROUTE, constraints: PlanConstraints = ROUTE_LIMITS) -> di
 
     courses = [e[0] for e in entries]
     difficulty = {c.code: difficulty_score(c).score for c in courses}
-    result = generate_plan(courses, (), difficulty, constraints, pinned=PINNED)
+    result = generate_plan(
+        courses, (), difficulty, constraints, pinned=PINNED, windows=WINDOWS
+    )
     return {
         "limits": {"credits": constraints.max_credits, "courses": constraints.max_courses},
         "groups": [
@@ -147,6 +151,7 @@ def build(path: Path = ROUTE, constraints: PlanConstraints = ROUTE_LIMITS) -> di
                 "group": group,
                 "generic": generic,
                 "pinned": c.code in PINNED,
+                "window": list(WINDOWS[c.code]) if c.code in WINDOWS else None,
             }
             for c, group, label, hint, generic in entries
         ],

@@ -278,3 +278,28 @@ def test_pinning_outside_the_plan_is_rejected():
     courses = [_six_credit("TEST1001")]
     with pytest.raises(ValueError):
         generate_plan(courses, constraints=PlanConstraints(max_semesters=2), pinned={"TEST1001": 5})
+
+
+def test_course_with_a_semester_range_stays_inside_it():
+    courses = [_six_credit(f"TEST{n}001") for n in range(1, 9)]
+    constraints = PlanConstraints(max_credits=12, max_courses=2, max_semesters=5)
+    result = generate_plan(courses, constraints=constraints, windows={"TEST8001": (2, 3)})
+    assert result.ok
+    position = next(i for i, sem in enumerate(result.semesters) if "TEST8001" in sem)
+    assert 2 <= position <= 3
+
+
+def test_semester_range_applies_to_document_order_too():
+    courses = [_six_credit("TEST1001"), _six_credit("TEST2001")]
+    constraints = PlanConstraints(max_credits=12, max_courses=2, max_semesters=4)
+    result = generate_plan(courses, constraints=constraints, windows={"TEST1001": (1, 1)})
+    assert result.baseline == [["TEST2001"], ["TEST1001"]]
+
+
+def test_semester_range_outside_the_plan_is_rejected():
+    with pytest.raises(ValueError):
+        generate_plan(
+            [_six_credit("TEST1001")],
+            constraints=PlanConstraints(max_semesters=2),
+            windows={"TEST1001": (3, 4)},
+        )

@@ -49,6 +49,8 @@ def test_route_plans_into_eight_legal_semesters_with_the_fixed_courses_in_place(
     assert sorted(placed) == sorted(by_code)
     for code, index in builder.PINNED.items():
         assert code in data["plan"][index]
+    for code, (first, last) in builder.WINDOWS.items():
+        assert any(code in data["plan"][i] for i in range(first, last + 1))
 
 
 def test_digital_literacy_and_final_year_project_follow_the_syllabus():
