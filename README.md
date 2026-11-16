@@ -190,6 +190,34 @@ signs of trouble (no courses, many without credits, titles as long as paragraphs
 sample to compare against the PDF. A clean report is not proof, so look at a few courses
 yourself, then upload the same file in the app.
 
+## AI-assisted parsing (optional)
+
+The built-in parser is deterministic and offline. For documents it struggles
+with, turn on **Ask an AI to help read messy documents** in the sidebar. The
+document text is then sent to Alibaba Cloud (Bailian) once per build, and the
+app adds any courses the AI finds that the built-in parser missed. Everything
+else still works without it.
+
+```bash
+export COURSE_PLANNER_API_KEY=...    # required (DASHSCOPE_API_KEY also works)
+export COURSE_PLANNER_API_MODEL=qwen-plus  # optional; the default
+```
+
+The answer is treated as a suggestion, not as truth:
+
+- a course is kept only when its code looks like a course code and appears in
+  the document text itself, so an invented course cannot reach the plan;
+- courses the built-in parser already found are never replaced, and its
+  warnings still apply;
+- everything the AI adds, ignores or fails at is reported in words, and the
+  app runs exactly as usual with the toggle off or without a key.
+
+Successful AI answers are cached locally, keyed by the document's bytes, so
+the feature keeps working for a document even after the key expires or the
+network is gone: the app replays the saved answer and says plainly that it is
+doing so. The cache lives in the same SQLite file as your saved documents and
+is wiped by the same delete button.
+
 ## Review data
 
 ### File format
@@ -240,7 +268,10 @@ API key. Chinese reviews can be translated once, when the dataset is built:
 
 ## Where your data goes
 
-Nothing is sent to a remote service. Documents you upload and what the parser read from them
+Nothing is sent to a remote service unless you turn on AI-assisted parsing
+(see above), and then only the document text goes to Alibaba Cloud (Bailian),
+once per build. Documents you upload, what the parser read from them and any
+cached AI answers are saved in a local SQLite file,
 are saved in a local SQLite file, `.course_planner/app.sqlite3` (change it with
 `COURSE_PLANNER_DB`). The sidebar button deletes everything in it. If reading a file fails,
 for example in a live demo, the saved result for the same file is shown instead, and the app
@@ -341,8 +372,9 @@ Must-have items from the proposal:
 | 6. Review and adjust the plan | Built |
 | 7. Flag prerequisite conflicts | Built for course-code prerequisites. Other conditions are reported, not enforced. |
 
-Should-have items: CSV export, self-reported difficulty ratings and the skill file are
-built. A second review source and the study with HKU students are not.
+Should-have items: CSV export, self-reported difficulty ratings, the skill
+file and an optional AI-assisted parse are built. A second review source and
+the study with HKU students are not.
 
 ### Known limitations
 
@@ -360,6 +392,8 @@ What to keep in mind when reading a plan:
 - The score comes from a 1 to 5 rating, not from reading review text. The bundled reviews
   are made up, and translation quality has not been tested on real RIC or colloquial
   Cantonese text.
+- AI-assisted parsing (optional, off by default) sends the document text to Alibaba Cloud.
+  Its suggestions are checked against the document text, but check any added course yourself.
 - Prerequisite checks cover course codes. Year standing, department approval and exam
   grades are not enforced.
 - Semester availability, timetable clashes, double majors, transfer credit and requirement

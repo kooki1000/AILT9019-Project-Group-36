@@ -14,6 +14,12 @@ from pathlib import Path
 
 import streamlit as st
 
+from course_planner.ai_parse import (
+    API_KEY_ENV,
+    ai_parse_document,
+    merge_parses,
+    parse_ai_response,
+)
 from course_planner.difficulty import DifficultyScore, difficulty_score
 from course_planner.editing import (
     add_course,
@@ -27,7 +33,7 @@ from course_planner.export import plan_to_csv
 from course_planner.intake import read_document
 from course_planner.metrics import compare_to_baseline
 from course_planner.models import Course, ParseResult
-from course_planner.parser import parse_completed_courses
+from course_planner.parser import document_text, parse_completed_courses
 from course_planner.planner import PlanConstraints, check_plan, generate_plan
 from course_planner.prerequisites import parse_prerequisites
 from course_planner.reviews import load_dataset, review_rows
@@ -60,6 +66,14 @@ def notify(level: str, text: str) -> None:
 
 def store() -> DocumentStore:
     return DocumentStore()
+
+
+def cached_ai_response(data: bytes) -> str | None:
+    """The AI's saved answer for exactly these bytes, or ``None``."""
+    try:
+        return store().load_ai_response(data)
+    except Exception:
+        return None
 
 
 def current_constraints() -> PlanConstraints:
@@ -108,7 +122,45 @@ def build_plan() -> None:
     parsed, notices = read_document(data, name, store(), wanted)
     ss.notices = notices
     ss.programmes = parsed.programmes if parsed is not None else []
-    if parsed is None:
+    if parsed is None and not ss.get("use_ai_parse"):
+        ss.pop("gen", None)
+        return
+    if ss.get("use_ai_parse"):
+        try:
+            text = document_text(data, name)
+        except Exception:
+            text = None  # an unreadable file: the original error below still applies
+        if text is not None:
+            ai = ai_parse_document(text)
+            replay_warning = None
+            if ai.error:
+                cached = cached_ai_response(data)
+                if cached is not None:
+                    ai = parse_ai_response(cached)
+                    if not ai.error:
+                        replay_warning = (
+                            "warning",
+                            "The AI service could not be reached (the key may have expired), "
+                            "so the saved AI answer for this exact document is shown instead.",
+                        )
+            elif ai.raw:
+                try:
+                    store().save_ai_response(data, ai.raw)
+                except Exception:
+                    pass
+            base = parsed if parsed is not None else ParseResult()
+            merged, ai_notices = merge_parses(base, text, ai)
+            if replay_warning is not None:
+                ai_notices.insert(0, replay_warning)
+            if parsed is None and merged.courses:
+                # The built-in parser found nothing and the AI did: replace the
+                # "no courses" error with the AI's account of what it added.
+                notices = ai_notices
+            else:
+                notices.extend(ai_notices)
+            parsed = merged
+            ss.notices = notices
+    if parsed is None or not parsed.courses:
         ss.pop("gen", None)
         return
     if parsed.programmes:
@@ -323,8 +375,20 @@ def render_sidebar() -> None:
         st.number_input("Max number of semesters", 1, 16, 8, key="max_semesters")
         st.caption("Changing a limit re-checks your plan. Use 'Build my plan' to regenerate it.")
 
+        st.header("AI-assisted parsing (optional)")
+        st.toggle("Ask an AI to help read messy documents", key="use_ai_parse")
+        st.caption(
+            "When on, the document text is sent once per build to Alibaba Cloud (Bailian) "
+            "to find courses the built-in parser missed. Needs the "
+            f"{API_KEY_ENV} environment variable. Leave off to keep everything on this "
+            "computer."
+        )
+
         st.header("Your data")
-        st.caption("Nothing you upload leaves this computer.")
+        if ss.get("use_ai_parse"):
+            st.caption("With AI parsing on, the document text is sent to Alibaba Cloud (Bailian).")
+        else:
+            st.caption("Nothing you upload leaves this computer.")
         count = len(store().list_documents())
         st.write(f"Saved documents: {count}")
         st.button("Delete all saved documents", on_click=delete_saved, disabled=count == 0)

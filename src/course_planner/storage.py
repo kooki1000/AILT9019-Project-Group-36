@@ -28,6 +28,12 @@ CREATE TABLE IF NOT EXISTS documents (
     content BLOB NOT NULL,
     parsed_json TEXT NOT NULL,
     saved_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ai_responses (
+    sha256 TEXT PRIMARY KEY,
+    response TEXT NOT NULL,
+    saved_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 )
 """
 
@@ -95,7 +101,7 @@ class DocumentStore:
     def _connect(self) -> sqlite3.Connection:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(self.path)
-        conn.execute(_SCHEMA)
+        conn.executescript(_SCHEMA)
         return conn
 
     def save(self, filename: str, content: bytes, result: ParseResult) -> str:
@@ -128,9 +134,34 @@ class DocumentStore:
             ).fetchall()
         return [StoredDocument(*row) for row in rows]
 
+    def save_ai_response(self, content: bytes, response: str) -> str:
+        """Cache the AI's raw answer for exactly these bytes, for offline replay."""
+        digest = document_hash(content)
+        with closing(self._connect()) as conn, conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO ai_responses (sha256, response) VALUES (?, ?)",
+                (digest, response),
+            )
+        return digest
+
+    def load_ai_response(self, content: bytes) -> str | None:
+        """Cached AI answer for exactly these bytes, if any."""
+        if not self.path.exists():
+            return None
+        with closing(self._connect()) as conn:
+            row = conn.execute(
+                "SELECT response FROM ai_responses WHERE sha256 = ?", (document_hash(content),)
+            ).fetchone()
+        return row[0] if row else None
+
     def delete_all(self) -> int:
-        """Delete every stored document; returns how many were removed."""
+        """Delete every stored document and cached AI answer.
+
+        Returns how many documents were removed.
+        """
         if not self.path.exists():
             return 0
         with closing(self._connect()) as conn, conn:
-            return conn.execute("DELETE FROM documents").rowcount
+            count = conn.execute("DELETE FROM documents").rowcount
+            conn.execute("DELETE FROM ai_responses")
+            return count

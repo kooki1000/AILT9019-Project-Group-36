@@ -38,6 +38,20 @@ def test_delete_all_removes_everything(tmp_path):
     assert store.load_parsed(b"x") is None
 
 
+def test_ai_response_cache_save_then_load(tmp_path):
+    store = DocumentStore(tmp_path / "db.sqlite3")
+    store.save_ai_response(b"doc bytes", '{"courses": []}')
+    assert store.load_ai_response(b"doc bytes") == '{"courses": []}'
+    assert store.load_ai_response(b"other bytes") is None
+
+
+def test_delete_all_also_wipes_cached_ai_responses(tmp_path):
+    store = DocumentStore(tmp_path / "db.sqlite3")
+    store.save_ai_response(b"x", "{}")
+    store.delete_all()
+    assert store.load_ai_response(b"x") is None
+
+
 def test_empty_store_does_not_create_a_file(tmp_path):
     store = DocumentStore(tmp_path / "nested" / "db.sqlite3")
     assert store.load_parsed(b"x") is None
