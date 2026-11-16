@@ -90,12 +90,19 @@ def generate_plan(
     completed: Collection[str] = (),
     difficulty: Mapping[str, float] | None = None,
     constraints: PlanConstraints = PlanConstraints(),  # noqa: B008 - frozen, safe to share
+    pinned: Mapping[str, int] | None = None,
+    windows: Mapping[str, tuple[int, int]] | None = None,
 ) -> PlanResult:
     """Plan the courses the student still needs.
 
     ``courses`` is the parsed requirement document in document order;
     ``completed`` are course codes already finished; ``difficulty`` maps course
-    code to a 1-10 score (missing entries use a mid-range value).
+    code to a 1-10 score (missing entries use a mid-range value). ``pinned``
+    fixes a course in a semester (code to a 0-based semester index), for a course
+    that is only offered in a given semester or runs across two; the planner
+    arranges everything else around it. ``windows`` limits a course to a range of
+    semesters (code to first and last 0-based index, both included), for a course
+    that belongs to one year of study.
     """
     done = set(completed)
     difficulty = difficulty or {}
@@ -108,19 +115,42 @@ def generate_plan(
 
     schedulable, levels, issues = _screen(required, done, constraints)
     result = PlanResult(issues=issues)
-    baseline, _ = baseline_plan(schedulable, done, constraints, max_semesters=len(schedulable))
+    codes = {c.code for c in schedulable}
+    pins = {code: i for code, i in (pinned or {}).items() if code in codes}
+    for code, index in pins.items():
+        if not 0 <= index < constraints.max_semesters:
+            raise ValueError(f"{code} is pinned to semester {index + 1}, which is not in the plan")
+    wins = {code: w for code, w in (windows or {}).items() if code in codes}
+    for code, (first, last) in wins.items():
+        if not 0 <= first <= last < constraints.max_semesters:
+            raise ValueError(f"{code} has a semester range outside the plan")
+    baseline, _ = baseline_plan(
+        schedulable,
+        done,
+        constraints,
+        max_semesters=len(schedulable) + len(pins) + 1,
+        pinned=pins,
+        windows=wins,
+    )
     result.baseline = baseline
 
     if schedulable:
         by_code = {c.code: c for c in schedulable}
         semesters = _best_balanced(
-            schedulable, levels, done, difficulty, constraints, len(baseline)
+            schedulable, levels, done, difficulty, constraints, baseline, pins, wins
         )
         if semesters is None or check_plan(semesters, by_code, done, constraints):
             # No balanced plan in the allowed range (or, defensively, an invalid
             # one). The baseline is valid by construction, so use it, cut off at
             # the semester limit.
             semesters = [list(s) for s in baseline[: constraints.max_semesters]]
+        elif len(baseline) == len(semesters) and (
+            load_variance(baseline, difficulty) < load_variance(semesters, difficulty)
+        ):
+            # The balancing is a heuristic. When document order happens to be more even over
+            # the same number of semesters, use it, so "balanced" is never worse than the
+            # baseline it is compared with.
+            semesters = [list(s) for s in baseline]
         placed = {code for sem in semesters for code in sem}
         leftover = [c.code for c in schedulable if c.code not in placed]
         if leftover:
@@ -145,29 +175,45 @@ def baseline_plan(
     completed: Collection[str],
     constraints: PlanConstraints,
     max_semesters: int | None = None,
+    pinned: Mapping[str, int] | None = None,
+    windows: Mapping[str, tuple[int, int]] | None = None,
 ) -> tuple[list[list[str]], list[str]]:
     """Fill each semester with courses in document order, respecting prerequisites and limits.
 
-    Returns ``(semesters, leftover_codes)``. This is the reference the balanced
-    plan is compared against.
+    Pinned courses go in their semester first. Returns ``(semesters, leftover_codes)``. This is
+    the reference the balanced plan is compared against.
     """
     limit = constraints.max_semesters if max_semesters is None else max_semesters
     done = set(completed)
-    remaining = list(courses)
+    pins = dict(pinned or {})
+    by_code = {c.code: c for c in courses}
+    pinned_at: dict[int, list[Course]] = {}
+    for code, index in pins.items():
+        if code in by_code:
+            pinned_at.setdefault(index, []).append(by_code[code])
+    wins = dict(windows or {})
+    remaining = [c for c in courses if c.code not in pins]
+    starts = (wins[c.code][0] for c in remaining if c.code in wins)
+    last_pin = max(max(pinned_at, default=-1), max(starts, default=-1))
     semesters: list[list[str]] = []
-    while remaining and len(semesters) < limit:
-        sem: list[Course] = []
-        credits = 0
-        for course in remaining:
+    while (remaining or len(semesters) <= last_pin) and len(semesters) < limit:
+        index = len(semesters)
+        sem: list[Course] = list(pinned_at.get(index, []))
+        credits = sum(course_credits(c, constraints) for c in sem)
+        # A course whose semester range ends now goes first; one whose range has not started waits.
+        due_first = sorted(remaining, key=lambda c: wins.get(c.code, (0, -1))[1] != index)
+        for course in due_first:
+            first = wins.get(course.code, (0, index))[0]
             cr = course_credits(course, constraints)
             if (
-                _satisfied(course, done)
+                first <= index
+                and _satisfied(course, done)
                 and credits + cr <= constraints.max_credits
                 and len(sem) < constraints.max_courses
             ):
                 sem.append(course)
                 credits += cr
-        if not sem:
+        if not sem and index > last_pin:
             break
         placed = {c.code for c in sem}
         semesters.append([c.code for c in sem])
@@ -421,7 +467,9 @@ def _best_balanced(
     completed: set[str],
     difficulty: Mapping[str, float],
     constraints: PlanConstraints,
-    baseline_length: int,
+    baseline: Sequence[Sequence[str]],
+    pinned: Mapping[str, int],
+    windows: Mapping[str, tuple[int, int]],
 ) -> list[list[str]] | None:
     """Balanced plan over the fewest semesters that work, or ``None``."""
     total_credits = sum(course_credits(c, constraints) for c in schedulable)
@@ -429,12 +477,22 @@ def _best_balanced(
         max(level.values()) + 1,
         math.ceil(total_credits / constraints.max_credits),
         math.ceil(len(schedulable) / constraints.max_courses),
+        max(pinned.values(), default=-1) + 1,
     )
     height = _heights(schedulable, level)
-    for n in range(lower_bound, min(baseline_length, constraints.max_semesters) + 1):
-        built = _build_balanced(schedulable, height, completed, difficulty, constraints, n)
-        if built is not None:
-            return _improve(built, schedulable, completed, difficulty, constraints)
+    for n in range(lower_bound, min(len(baseline), constraints.max_semesters) + 1):
+        # The balanced build can run out of semesters when long prerequisite chains are left
+        # until late, so if it fails try again starting the longest chains first.
+        for critical_first in (False, True):
+            built = _build_balanced(
+                schedulable, height, completed, difficulty, constraints, n, pinned,
+                windows, critical_first,
+            )
+            if built is not None and _in_windows(built, windows):
+                return _improve(
+                    built, schedulable, completed, difficulty, constraints, pinned, baseline,
+                    windows,
+                )
     return None
 
 
@@ -445,19 +503,31 @@ def _build_balanced(
     difficulty: Mapping[str, float],
     constraints: PlanConstraints,
     n_semesters: int,
+    pinned: Mapping[str, int],
+    windows: Mapping[str, tuple[int, int]] | None = None,
+    critical_first: bool = False,
 ) -> list[list[str]] | None:
     order = {c.code: i for i, c in enumerate(schedulable)}
     load = {c.code: difficulty.get(c.code, DEFAULT_DIFFICULTY) for c in schedulable}
-    remaining = {c.code: c for c in schedulable}
+    by_code = {c.code: c for c in schedulable}
+    pinned_at: dict[int, list[Course]] = {}
+    for code, index in pinned.items():
+        pinned_at.setdefault(index, []).append(by_code[code])
+    windows = windows or {}
+    remaining = {c.code: c for c in schedulable if c.code not in pinned}
     done = set(completed)
     semesters: list[list[str]] = []
 
     for s in range(n_semesters):
         left = n_semesters - s
-        available = [c for c in remaining.values() if _satisfied(c, done)]
-        chosen: list[Course] = []
-        credits = 0
-        total = 0.0
+        available = [
+            c
+            for c in remaining.values()
+            if _satisfied(c, done) and windows.get(c.code, (0, s))[0] <= s
+        ]
+        chosen: list[Course] = list(pinned_at.get(s, []))
+        credits = sum(course_credits(c, constraints) for c in chosen)
+        total = sum(load[c.code] for c in chosen)
 
         def fits(course: Course, credits: int, count: int) -> bool:
             return (
@@ -465,26 +535,40 @@ def _build_balanced(
                 and count < constraints.max_courses
             )
 
+        # A course whose semester range ends now has to go in now.
+        for course in available:
+            if windows.get(course.code, (0, -1))[1] == s and course not in chosen:
+                chosen.append(course)
+                credits += course_credits(course, constraints)
+                total += load[course.code]
+
         # A course with a long chain behind it must start now or the plan overruns.
         urgent = sorted(
             (c for c in available if height[c.code] >= left - 1),
             key=lambda c: (-height[c.code], order[c.code]),
         )
         for course in urgent:
-            if fits(course, credits, len(chosen)):
+            if course not in chosen and fits(course, credits, len(chosen)):
                 chosen.append(course)
                 credits += course_credits(course, constraints)
                 total += load[course.code]
 
-        target = sum(load[code] for code in remaining) / left
+        target = (
+            sum(load[code] for code in remaining)
+            + sum(load[code] for code, index in pinned.items() if index >= s)
+        ) / left
 
         # Later semesters have limited room, so take at least enough now to
         # leave them a feasible amount (by course count and by credits).
-        later = left - 1
-        min_count = len(remaining) - later * constraints.max_courses
+        room_courses = room_credits = 0
+        for k in range(s + 1, n_semesters):
+            room_courses += constraints.max_courses - len(pinned_at.get(k, []))
+            room_credits += constraints.max_credits - sum(
+                course_credits(c, constraints) for c in pinned_at.get(k, [])
+            )
+        min_count = len(remaining) - room_courses
         min_credits = (
-            sum(course_credits(c, constraints) for c in remaining.values())
-            - later * constraints.max_credits
+            sum(course_credits(c, constraints) for c in remaining.values()) - room_credits
         )
         while len(chosen) < min_count or credits < min_credits:
             candidates = [c for c in available if c not in chosen and fits(c, credits, len(chosen))]
@@ -492,7 +576,11 @@ def _build_balanced(
                 break
             course = min(
                 candidates,
-                key=lambda c: (abs(total + load[c.code] - target), order[c.code]),
+                key=lambda c: (
+                    -height[c.code] if critical_first else 0,
+                    abs(total + load[c.code] - target),
+                    order[c.code],
+                ),
             )
             chosen.append(course)
             credits += course_credits(course, constraints)
@@ -500,11 +588,12 @@ def _build_balanced(
 
         optional = sorted(
             (c for c in available if c not in chosen),
-            key=lambda c: (-load[c.code], order[c.code]),
+            key=lambda c: (-height[c.code] if critical_first else 0, -load[c.code], order[c.code]),
         )
         for course in optional:
-            if fits(course, credits, len(chosen)) and abs(total + load[course.code] - target) < abs(
-                total - target
+            # Packing mode takes everything that fits; the local search evens the plan out later.
+            if fits(course, credits, len(chosen)) and (
+                critical_first or abs(total + load[course.code] - target) < abs(total - target)
             ):
                 chosen.append(course)
                 credits += course_credits(course, constraints)
@@ -513,7 +602,7 @@ def _build_balanced(
         semesters.append([c.code for c in chosen])
         done.update(c.code for c in chosen)
         for course in chosen:
-            del remaining[course.code]
+            remaining.pop(course.code, None)
 
     return semesters if not remaining else None
 
@@ -524,8 +613,16 @@ def _improve(
     completed: set[str],
     difficulty: Mapping[str, float],
     constraints: PlanConstraints,
+    pinned: Mapping[str, int],
+    baseline: Sequence[Sequence[str]] = (),
+    windows: Mapping[str, tuple[int, int]] | None = None,
 ) -> list[list[str]]:
-    """Move or swap courses while the plan stays valid and gets more even."""
+    """Move or swap courses while the plan stays valid and gets more even.
+
+    Pinned courses stay where they are. Once no move makes the plan more even, courses move back
+    toward their document-order semester as long as the plan stays (nearly) as even, so
+    courses with nothing to tell them apart are not scattered at random.
+    """
     by_code = {c.code: c for c in schedulable}
     required = [code for sem in semesters for code in sem]
     plan = [list(sem) for sem in semesters]
@@ -534,22 +631,57 @@ def _improve(
     improved = True
     while improved:
         improved = False
-        for candidate in _neighbours(plan):
+        for candidate in _neighbours(plan, set(pinned)):
             variance = load_variance(candidate, difficulty)
-            if variance < best - 1e-9 and not check_plan(
-                candidate, by_code, completed, constraints, required
+            if (
+                variance < best - 1e-9
+                and _in_windows(candidate, windows or {})
+                and not check_plan(candidate, by_code, completed, constraints, required)
             ):
                 plan, best, improved = candidate, variance, True
                 break
+
+    home = {code: i for i, sem in enumerate(baseline) for code in sem}
+
+    def drift(candidate: Sequence[Sequence[str]]) -> int:
+        return sum(abs(i - home.get(code, i)) for i, sem in enumerate(candidate) for code in sem)
+
+    if home:
+        ceiling = best + max(0.05, 0.02 * best)
+        away = drift(plan)
+        improved = True
+        while improved:
+            improved = False
+            for candidate in _neighbours(plan, set(pinned)):
+                closer = drift(candidate)
+                if (
+                    closer < away
+                    and _in_windows(candidate, windows or {})
+                    and load_variance(candidate, difficulty) <= ceiling
+                    and not check_plan(candidate, by_code, completed, constraints, required)
+                ):
+                    plan, away, improved = candidate, closer, True
+                    break
 
     while plan and not plan[-1]:
         plan.pop()
     return plan
 
 
-def _neighbours(plan: list[list[str]]) -> Iterator[list[list[str]]]:
+def _in_windows(plan: Sequence[Sequence[str]], windows: Mapping[str, tuple[int, int]]) -> bool:
+    for index, semester in enumerate(plan):
+        for code in semester:
+            first, last = windows.get(code, (0, len(plan)))
+            if not first <= index <= last:
+                return False
+    return True
+
+
+def _neighbours(plan: list[list[str]], frozen: Collection[str] = ()) -> Iterator[list[list[str]]]:
     for i, source in enumerate(plan):
         for code in source:
+            if code in frozen:
+                continue
             for j, target in enumerate(plan):
                 if i == j:
                     continue
@@ -558,6 +690,8 @@ def _neighbours(plan: list[list[str]]) -> Iterator[list[list[str]]]:
                 moved[j].append(code)
                 yield moved
                 for other in target:
+                    if other in frozen:
+                        continue
                     swapped = [list(sem) for sem in plan]
                     swapped[i][swapped[i].index(code)] = other
                     swapped[j][swapped[j].index(other)] = code
