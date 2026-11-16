@@ -121,6 +121,13 @@ def generate_plan(
             # one). The baseline is valid by construction, so use it, cut off at
             # the semester limit.
             semesters = [list(s) for s in baseline[: constraints.max_semesters]]
+        elif len(baseline) == len(semesters) and (
+            load_variance(baseline, difficulty) < load_variance(semesters, difficulty)
+        ):
+            # The balancing is a heuristic. When document order happens to be more even over
+            # the same number of semesters, use it, so "balanced" is never worse than the
+            # baseline it is compared with.
+            semesters = [list(s) for s in baseline]
         placed = {code for sem in semesters for code in sem}
         leftover = [c.code for c in schedulable if c.code not in placed]
         if leftover:
