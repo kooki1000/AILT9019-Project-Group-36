@@ -45,10 +45,10 @@ draft plan without uploading anything:
 | Semester | Courses |
 | -------- | ------- |
 | 1 | COMP1117, MATH1013 |
-| 2 | COMP2113, COMP2119, STAT2601 |
-| 3 | COMP3230, COMP3314 |
+| 2 | COMP2113, COMP2119 |
+| 3 | COMP3230, COMP3314, STAT2601 |
 
-That run reads 7 courses with no warnings, uses 20 demonstration reviews that cover all 7,
+That run reads 7 courses with no warnings, uses 48 student reviews that cover all 7,
 and finds nothing unscheduled and no plan problems. Changing the completed courses, the
 semester limits or the review file can change the result.
 
@@ -223,8 +223,10 @@ is wiped by the same delete button.
 ### File format
 
 The app reads reviews from one local CSV, `data/reviews/sample_reviews.csv` by default. That
-file is demonstration data and is not real RIC data. Set `COURSE_PLANNER_REVIEWS` to use a
-different file. Without any file, scores come from the document alone.
+file holds real RIC course reviews collected for this project, with no usernames or account
+details. The 1-5 ratings were assigned during dataset preparation (1 = hardest, 5 = easiest).
+Set `COURSE_PLANNER_REVIEWS` to use a different file. Without any file, scores come from the
+document alone.
 
 ```text
 course_code,text,rating,translation
@@ -238,11 +240,11 @@ course_code,text,rating,translation
   `translation` already filled in, otherwise it is left out.
 - After a build, the app says how many reviews it loaded and how many it left out.
 
-### Before adding real reviews
+### Adding more reviews
 
-Before real review data goes into the repository, the team has to confirm that collecting
-and reusing it is allowed, remove personal identifiers, and make sure no account details or
-other private information are included.
+The bundled reviews were collected from RIC for this project, with no usernames, account
+details or other private information, and teacher names removed. If you add more reviews,
+keep the same rules, and have a teammate spot-check the ratings and translations.
 
 ### Preparing a translated dataset (team only)
 
@@ -365,7 +367,7 @@ Must-have items from the proposal:
 | Item | Status |
 | ---- | ------ |
 | 1. Parse a requirement document | Built. 100% on our labelled documents. Tried on eleven real syllabuses and checked against their text, but with no labelled accuracy figure for real files. |
-| 2. Load a local review CSV | Built, with demonstration data. Real RIC data and its permission are still open. |
+| 2. Load a local review CSV | Built, with real RIC reviews collected for this project (ratings assigned during preparation). |
 | 3. Detect and translate Chinese reviews | The translation helper is built. The app reads only translations prepared beforehand. |
 | 4. 1 to 10 score with a fallback rule | Built. Review input is the 1 to 5 rating. |
 | 5. Multi-semester plan | Built |
@@ -389,9 +391,9 @@ What to keep in mind when reading a plan:
   can't schedule.
 - Several faculties leave credits out of whole lists. The app warns and leaves the credits
   empty. Stacked "A or B" table cells that PDF extraction scrambles can do the same.
-- The score comes from a 1 to 5 rating, not from reading review text. The bundled reviews
-  are made up, and translation quality has not been tested on real RIC or colloquial
-  Cantonese text.
+- The score comes from a 1 to 5 rating, not from reading review text. The ratings were
+  assigned during dataset preparation, and the Chinese translations have not all been
+  spot-checked by a second reader.
 - AI-assisted parsing (optional, off by default) sends the document text to Alibaba Cloud.
   Its suggestions are checked against the document text, but check any added course yourself.
 - Prerequisite checks cover course codes. Year standing, department approval and exam

@@ -1,21 +1,49 @@
 course_code,text,rating,translation
-COMP1117,"Good intro course, the assignments teach a lot",4,
-COMP1117,"Clear lectures and fair exams",5,
-COMP1117,"A bit fast at the end, but manageable",3,
-COMP2113,"Heavy on projects, but you learn real tools",3,
-COMP2113,"More work than the credits suggest",2,
-COMP2113,"Practical and interesting",4,
-COMP2119,"Hard but rewarding; the midterm is tough",2,
-COMP2119,"Takes a lot of practice every week",2,
-COMP2119,"The tutorial materials help a lot",4,
-COMP3230,"Labs every week and the exams are brutal",1,
-COMP3230,"Very demanding, start assignments early",2,
-COMP3230,"每星期都要做 lab，功課量真係好大",1,"This course has labs every week and the workload is really heavy."
-COMP3314,"Interesting, but the project takes forever",3,
-COMP3314,"Maths heavy, good with a strong background",4,
-MATH1013,"Homework every week and a hard midterm",2,
-MATH1013,"功課好多，midterm 好難",2,"Lots of homework and the midterm was very hard."
-MATH1013,"Fair, but you must keep up",3,
-STAT2601,"Well taught with clear examples",4,
-STAT2601,"Assignments are straightforward",5,
-STAT2601,"Interesting applications and fair workload",4,
+COMP1117,"纯念ppt，教授毫无生气，像个机器人。课程内容看ppt就行，期末要手写代码（都2026年了）。一想到学费要变成这种教授的工资就很难受。",2,"The professor just reads the slides like a robot. You can get by with the slides alone, but the final exam requires handwriting code (in 2026!). It's frustrating to think tuition pays for this kind of teaching."
+COMP1117,"超级好的一门课，很简单，建议刷龟，就是期末要手写代码",4,"Really good course, very easy, good for a high grade. Just be ready to handwrite code in the final exam."
+COMP1117,"很基础的python课，wl小，平时分一般认真做都可以拿满，期中也只有很少的选择题。一学期没去过lecture和tut都没关系，读ppt就好了，全部都在上面。",5,"A very basic Python course with a light workload. Do the coursework carefully and you can get full marks; the midterm is just a few multiple-choice questions. You can skip lectures and tutorials all semester — everything is on the slides."
+COMP1117,"Didn't go to any of the lectures — just do past papers and you'll be fine.",5,
+COMP1117,"不难，ap学过csa的话，只要熟悉一下python语言就好了",4,"Not hard. If you did AP CSA, you just need to get familiar with Python."
+COMP1117,"真的不难，稍微会一点，哪怕没打过竞赛也轻松完成。认真一点就可以。真的可以不用去上课。",5,"Really not hard — even without competition experience you'll finish it easily if you put in a little effort. You honestly don't need to attend class."
+COMP1117,"教的内容比较浅，好龟，就是期末纸笔考试比较难评",4,"The content is fairly shallow and the grades are good; the only tricky part is the handwritten final exam."
+COMP1117,"上课就是念ppt大部分靠回家自学，整体难度ok",3,"Lectures are just slide-reading; most learning happens at home. Overall difficulty is OK."
+COMP2113,"两个作业都没做还能拿A+，上了半天等于什么都没上，what can I say，港大CS的基础课挺让人失望的。不过千言万语感谢队友了，真的是好groupmate，可惜去上海了。",2,"I skipped both assignments and still got an A+, which says a lot about how little the course taught me — HKU CS foundation courses are really disappointing. Endless thanks to my teammates though, great groupmates; too bad they went to Shanghai."
+COMP2113,"CDS最糟糕的课之一，老师提供过0个帮助，assignment尽是一些难度离谱的东西，就逼着你用AI。上次final说不考STL，结果这次一半都考STL，还用质量很差的教材打发学生时间。",1,"One of the worst CDS courses. The lecturer offered zero help, the assignments are absurdly hard (basically forcing you to use AI), the final covered STL after they said it wouldn't, and the teaching materials are poor quality time-fillers."
+COMP2113,"100% self-study course. Quite a lot of content (although frankly mostly surface-level stuff) from Git to Linux Shell and C++. Not so big on algorithms, which was a surprise. If you took ENGG1330 before, you should already know the ABCs of making a terminal game. If you haven't (or, let's say, your teammates did the heavy lifting for you), then good luck completing the group project. Honestly the course is way easier post-LLM. If you are driven and want to learn programming, the course is a great head-start.",3,
+COMP2113,"不擅长计算机的快跑吧 final确实有点神人了其实 而且神人太多卷不过",2,"If you're not good at computing, run away. The final was honestly a bit crazy, and there are too many crazy ones to out-compete."
+COMP2113,"纯自学课，每周固定几个小时的学习模式会好一点，gp一定要找好点的队友",3,"Pure self-study course. Setting aside a few fixed hours per week helps, and you must find good teammates for the group project."
+COMP2113,"Oh my god, I'm glad I survived.",2,
+COMP2113,"这门课基本就是自学，作业都可以用AI完成，然后final考得很偏：复习了半天linked list，结果全部考第九章map、list和set的迭代器。final考得一般，最后B+。",2,"This course is basically self-study; the assignments can all be done with AI. The final is oddly off-target: I revised linked lists for ages and it ended up testing map, list and set iterators from chapter nine. My final wasn't great; I ended with a B+."
+COMP2113,"exam 有cheatsheet 但给的题目也不太用的上，后面的作业和内容有点难度",3,"The exam allows a cheatsheet, but the questions didn't really match it. The later assignments and content are somewhat difficult."
+COMP2119,"开学第二周就绷不住了，这老师上课讲得很差，怎么做到让我上课一个字都听不进去的，真的无语。",1,"I was breaking down by week two. The lecturer is terrible — I couldn't absorb a single word in class. Truly speechless."
+COMP2119,"final挺难的 平时上课挺清晰的 给分挺好的",3,"The final is quite hard, but the lectures are clear and the grading is generous."
+COMP2119,"Simple course contents, but extremely hard final exam... The only available past paper is the 2020-2021 semester 2 one. The hardest question in the past paper is not even half as hard as the easiest question in the final exam that I did. There needs to be extensive extra-curricular learning and revision to do well in this course.",2,
+COMP2119,"能学到东西，有点难，wl不算特别大",3,"You learn a lot, it's a bit hard, and the workload isn't especially large."
+COMP2119,"好难啊这课别跟2601一起上。大佬别听我的",2,"This course is really hard — don't take it together with 2601. (Talented students, ignore me.)"
+COMP2119,"基本上属于数学课吧。final比mid难",3,"Basically a maths course. The final is harder than the midterm."
+COMP2119,"Siuuu 好龟，但是上课经常不在，经典你U的comp课，考完了试不知道学了啥，毫无实战性。。。",3,"Siuuu, the grades are good, but the teaching is often absent — a classic HKU CS course. After the exam I had no idea what I'd learned; zero practical value."
+COMP2119,"老师教得不错 态度负责 对于基础不好的人来说期末考试蛮难的 但是给龟比预料要好 感觉有捞",3,"The teacher is good and responsible. For people with a weak foundation the final is quite hard, but the grades were better than expected — felt like there was a curve."
+COMP3230,"Grade A. If you have interest in OS, you can self-learn it on other websites first, then this course will be very easy — especially if you've done enough system programming. But the teacher is not very knowledgeable about the OS.",3,
+COMP3230,"Pure rubbish — this course is about reciting everything, not understanding.",2,
+COMP3230,"好好学就能好龟作业好好做ppt认真看",3,"Study properly and you'll get a good grade: do the assignments carefully and read the slides closely."
+COMP3230,"好课，不去上课把阅读好好看完就能拿 A+",4,"Good course. You don't even need to attend — just finish the readings properly and you can get an A+."
+COMP3230,"好不容易拿了A+。一定要好好读reading，弄清原理。",3,"I got an A+ only with real effort. Make sure you read the readings carefully and understand the principles."
+COMP3314,"這個prof真的逆天。。上課但凡難一點的知識都不講，簡單知識又翻來覆去重複，板書在第三排之後根本看不清。Slides知識點零散思維步驟又跳躍，幾乎所有人都要通過AI才能理解課程內容",2,"The professor is genuinely outrageous. Anything remotely hard is skipped in class, while the easy bits are repeated endlessly, and the board writing is unreadable past the third row. The slides are scattered and jumpy, and almost everyone needed AI to understand the material."
+COMP3314,"A good introductory course to help students learn the logistics of Machine Learning. Concepts are very traditional ML ones, and students get good opportunities to improve their ML programming knowledge. Good and recommended course overall.",4,
+COMP3314,"讲的不难，都是传统的machine learning，后面有一些neural network，cnn的内容。上课内容偏coding，但考试偏数学。考试不难，但分差很小，错一点就可能往下掉一些，我就是不知道错了哪里，最后拿了B",3,"The content isn't hard — traditional machine learning, plus some neural network and CNN material later. Lectures lean towards coding, but the exam leans towards maths. The exam isn't hard, but the spread is tiny: get one thing slightly wrong and you drop. I still don't know where I lost marks; ended with a B."
+COMP3314,"感觉挺好的，认真学就可以好grade",4,"Felt pretty good — study seriously and you'll get a good grade."
+COMP3314,"教授人真非常非常好 平时作业也不太难 教的东西感觉也是借鉴的美国名校 都是比较基础的机器学习内容没有非常难理解 感觉比较有用。缺点就是教 考 学完全是三门课，一门课相当于学了三门课，某种意义上还挺赚的。今年final不知为何非常简单，感觉非常卷，错一个题就B了可能。但是总体好龟",4,"The professor is really, really nice and the assignments aren't too hard. The content borrows from top US schools — foundational ML, not hard to understand, and quite useful. The downside: teaching, exams and learning are three completely different things, so one course equals three courses — in a way it's a bargain. This year's final was mysteriously easy, so it felt very competitive; one wrong question might mean a B. Overall a good grade is very achievable."
+MATH1013,"老师真的很好，是一个模范，既有课堂中的练习，笔记和recording都放moodle，同时moodle简洁明了，永远不黑老师，最后A，有点可惜",4,"The teacher is great, a real role model: in-class exercises, notes and recordings all on Moodle, and the Moodle page is clean and clear. Never a bad word about the teacher. Ended with an A, though a bit of a pity."
+MATH1013,"Absolute mess. The lecturer would say things like 'the finals would be harder for anyone to solve'. I mean, if no one can solve them, what are you teaching us?",1,
+MATH1013,"课很好 tut/lec都不用签到",4,"Good course — no attendance required for tutorials or lectures."
+MATH1013,"国际生慎入 除非高中数学接触的比较多也好 不是真的很好自认为好的可以赶紧跑路了",2,"International students beware — unless your high-school maths background is strong. It's not that friendly, so if you only think you're good at maths, run."
+MATH1013,"老师很认真，ppt很详细也有配套的讲解视频。上课基本就是老师带着练习。想要拿好成绩需要多刷",3,"The teacher is very conscientious; the slides are detailed with matching explanation videos. Class is basically guided practice. To get a good grade you need to do lots of practice problems."
+MATH1013,"太卷了，不刷题绝对要烂龟，国际生燃尽了",2,"Too competitive — without grinding practice problems your grade is doomed. International students get burned out."
+MATH1013,"老师真的超级好，很有节奏的一个课，非常负责，跟着走就没问题。期末很难，要多做past paper.",3,"The teacher is genuinely superb — a well-paced course, very responsible; follow along and you'll be fine. The final is hard, so do plenty of past papers."
+STAT2601,"workload巨大 没准备好的小心选 挑一个比较闲的学期学吧",2,"The workload is huge. Don't pick it unless you're ready — choose a quieter semester."
+STAT2601,"wl巨大 老师会用各种任务pua你 我test1，2自认为都很不错 final也基本都答出来了 但是最后只有A-我怀疑是我没怎么做老师平时要求的各种诡异任务。",2,"The workload is huge and the teacher piles pressure on you with all kinds of tasks. I thought my test 1 and 2 went well and I answered almost everything in the final, but I only got an A- — I suspect it's because I didn't do all the odd weekly tasks the teacher requires."
+STAT2601,"孩子們year plan讓我選擇這超難課程",2,"My year plan made me pick this super hard course."
+STAT2601,"wl比较大，多刷题，老师很负责，内容比较多，前半部分使劲刷题刷视频，后半部分比较赶靠自学",3,"Fairly heavy workload — do lots of practice problems. The teacher is very responsible. The first half needs lots of drills and videos; the second half is rushed and mostly self-study."
+STAT2601,"老师很负责，就是wl巨大，拼尽全力获得A",2,"The teacher is responsible, but the workload is enormous. I gave it everything for an A."
+STAT2601,"C+致敬怡泉+C，只能来世再见了",1,"Got a C+ (a salute to the 'C+' drink). See you in my next life."
+STAT2601,"老师使我的gpa旋转，难触摸的course",2,"The teacher made my GPA spin. A course beyond my reach."
