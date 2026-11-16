@@ -504,8 +504,8 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
       <h2 id="h-limits">What it can't do yet</h2>
       <div class="prose">
         <ul>
-          <li>The reviews in the repo are demo data we made up. We'd need permission to collect and reuse real RIC reviews, and we don't have it yet. Until then the review part of the score runs on invented ratings.</li>
-          <li>The score only uses each review's 1 to 5 rating, not the text. We also haven't tested the translation on real, colloquial Cantonese.</li>
+          <li>The bundled reviews are real RIC course reviews collected for this project, with no usernames and no teacher names. Their 1 to 5 ratings were assigned during dataset preparation, and the translations haven't all been spot-checked by a second reader yet.</li>
+          <li>The score only uses each review's 1 to 5 rating, not the text. The Chinese-to-English translations of the reviews still need a spot-check by a second reader.</li>
           <li>Most syllabuses list few prerequisites (BEcon lists none), and the planner doesn't know which year a course belongs to. It can put a final-year course in semester 1, and in the route above it pulls COMP3322, a third-year course, into Year 1. Treat the order as a starting point.</li>
           <li>A document as big as a faculty catalogue, like the BA, can't be planned until you say which courses you're taking. Option lists with no clear heading can get counted as required.</li>
           <li>Prerequisite checks only cover course codes. Year standing, department approval and exam grades get a warning and nothing more. Summer terms, timetable clashes and which semester a course actually runs in aren't covered.</li>

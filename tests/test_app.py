@@ -290,7 +290,9 @@ def test_reviews_behind_scores_are_shown_with_original_text(app, monkeypatch):
     assert not at.exception
     assert [e.label for e in at.expander] == ["Student reviews behind each score"]
     shown = [t.value for t in at.table if "Original text" in t.value.columns]
-    assert shown and "Good intro course" in shown[0]["Original text"].iloc[0]
+    texts = [text for table in shown for text in table["Original text"]]
+    assert shown and any("past papers" in text for text in texts)
+    assert any("手写代码" in text for text in texts)  # a Chinese original is kept verbatim
 
 
 def test_no_review_panel_without_reviews(built):
