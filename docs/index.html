@@ -133,8 +133,7 @@ h1 span { display: block; }
 .tile.generic { border-style: dashed; }
 .tile .code::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; background: var(--cat, transparent); border: 1.5px solid rgba(255,255,255,0.85); outline: 1px solid rgba(20,35,28,0.6); vertical-align: -1px; }
 .tile.hollow .code::before { background: transparent; border: 1.5px dashed var(--ink); outline: 0; }
-.tile.fixed { cursor: default; }
-.tile.fixed .num::after { content: " \1F512"; font-size: 0.7rem; }
+.tile.pinned { cursor: default; }
 .board.filtering .tile.dim { opacity: 0.22; }
 .cats { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 12px 0 0; font-family: var(--display); font-size: 0.85rem; align-items: center; }
 .cats .lead { color: var(--muted); margin-right: 4px; }
@@ -170,7 +169,8 @@ h1 span { display: block; }
 .summer { margin: 14px 0 0; padding: 10px 14px; border: 2px dashed var(--rule); font-family: var(--display); font-size: 0.92rem; max-width: 46em; }
 .legend { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; font-family: var(--display); font-size: 0.85rem; color: var(--muted); }
 .legend .ramp { width: 140px; height: 12px; border: 1px solid rgba(20,35,28,0.35); background: linear-gradient(90deg, var(--ramp-lo), var(--ramp-mid), var(--ramp-hi)); }
-.legend .note { flex-basis: 100%; max-width: 60em; }
+.legend ul { flex-basis: 100%; margin: 6px 0 0; padding-left: 1.2em; max-width: 52em; line-height: 1.45; }
+.legend li { margin-bottom: 3px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .board.entering .tile { animation: settle 520ms cubic-bezier(.2,.8,.2,1) backwards; animation-delay: calc(var(--i) * 55ms); }
@@ -289,7 +289,7 @@ footer p { margin: 0; max-width: 40em; }
   <main id="main">
     <div class="hero" id="top">
       <h1><span>HKU tells you what to take.</span> <span>It doesn't tell you when.</span></h1>
-      <p class="lede">We built a small app that reads your programme's requirement document and spreads the courses over your semesters, so one semester doesn't end up a lot heavier than the rest. It runs on your own laptop, and nothing you upload leaves it.</p>
+      <p class="lede">We made an app that reads your programme's requirements and spreads your courses over the semesters, so no semester is much heavier than the others. It runs on your own laptop and nothing you upload leaves it.</p>
       <div class="actions">
         <a class="btn solid" href="#local">Run it yourself</a>
         <a class="btn line" href="https://github.com/kooki1000/AILT9019-Project-Group-36">Source code on GitHub</a>
@@ -297,7 +297,7 @@ footer p { margin: 0; max-width: 40em; }
 
       <div class="board-wrap" id="board-wrap">
         <div class="board-intro">
-          <p>The app turns a programme's requirements into a semester-by-semester plan that spreads the workload evenly. This is its real output for the HKU 2025-26 BEng (Computer Science) syllabus, 240 credits over four years. Try it yourself: switch to document order, click any course, and move it to another semester to see what breaks.</p>
+          <p>This is the app's real output for the HKU 2025-26 BEng (Computer Science) syllabus: 240 credits over four years. Try it yourself. Switch to document order, click a course and move it to another semester to see what breaks.</p>
         </div>
         <noscript><p>The interactive plan needs JavaScript. The screenshots further down show the app itself.</p></noscript>
         <div class="controls">
@@ -314,29 +314,35 @@ footer p { margin: 0; max-width: 40em; }
         <div class="board" id="board" aria-label="Eight-semester plan"></div>
         <div class="status" id="status" role="status" aria-live="polite"></div>
         <div class="cats" id="cats" role="group" aria-label="Highlight a requirement"></div>
-        <p class="summer"><strong>Summer after Year 3:</strong> the syllabus also requires COMP3410 Internship (0 credits, at least four weeks full-time). The app plans regular semesters only, so it is not on the board.</p>
-        <div class="reqs" id="reqs"></div>
         <div class="legend">
-          <span>Shade is the 1 to 10 difficulty score:</span>
+          <span>Shade shows the 1 to 10 difficulty score:</span>
           <span>lighter</span><span class="ramp" aria-hidden="true"></span><span>darker</span>
-<span class="note">Shade is the difficulty score, worked out from the syllabus alone with no reviews. Spread is the variance of each semester's total difficulty, so lower means more even. Dashed tiles are slots with no course code (Common Core, Chinese language, free electives), which the app knows nothing about and scores mid-range. The 12-credit final year project runs through all of Year 4, so it is split into two fixed halves, and the digital literacy courses AILT1001 (Year 1) and AILT9019 (Year 2) are fixed too. A semester can hold up to 33 credits and 6 courses, because those two courses are 3 credits each.</span>
+          <ul>
+            <li>The score comes from the syllabus alone, with no reviews.</li>
+            <li>Spread is how uneven the semesters are (the variance of each semester's total difficulty). Lower is better.</li>
+            <li>Dashed tiles are slots with no course code, like Common Core. The app knows nothing about them, so it gives them a mid-range score.</li>
+            <li>COMP4801 is a year-long course, so it is two 6-credit halves that stay in Year 4.</li>
+            <li>AILT1001 belongs in Year 1 and AILT9019 in Year 2. They are 3 credits each, so a semester can hold up to 33 credits and 6 courses.</li>
+          </ul>
         </div>
+        <p class="summer"><strong>Summer after Year 3:</strong> the syllabus also requires COMP3410 Internship (0 credits, at least four weeks full-time). The app only plans regular semesters, so it isn't on the board.</p>
+        <div class="reqs" id="reqs"></div>
       </div>
     </div>
 
     <section class="block" id="problem" aria-labelledby="h-problem">
       <h2 id="h-problem">The problem</h2>
       <div class="prose">
-        <p>HKU publishes what every programme requires. What it doesn't say is when to take each course, or how heavy a semester will be once you stack them up. Most of us work it out from memory, a spreadsheet or a quick chat with an adviser, and sometimes you only find out a semester is overloaded after you've enrolled.</p>
-        <p>Programme pages tell you what to take, and RIC tells you how hard a course feels, but nothing joins the two into a plan. We looked for a tool that reads the requirements, uses course reviews and spreads courses by workload, and couldn't find one. The idea is ours. It isn't from the course topic list, and it came from planning headaches we and our friends kept running into.</p>
+        <p>HKU publishes what every programme requires. It doesn't say when to take each course, or how heavy a semester gets once you stack them up. Most of us work it out from memory, a spreadsheet or a quick chat with an adviser, and sometimes you only find out a semester is overloaded after you've enrolled.</p>
+        <p>Programme pages tell you what to take. RIC tells you how hard a course feels. Nothing combines the two into a plan, and we couldn't find a tool that reads the requirements, uses course reviews and spreads courses by workload. The idea is ours, not from the course topic list. It comes from planning problems we and our friends ran into.</p>
         <div class="split">
           <div>
             <h3>Who it's for</h3>
-            <p>Undergraduates who already know their programme and want a draft plan they can look over and edit.</p>
+            <p>Undergraduates who already know their programme and want a draft plan to look over and edit.</p>
           </div>
           <div>
             <h3>Who it's not for</h3>
-            <p>It isn't a graduation audit and it doesn't replace an academic adviser. Don't use it for double majors, transfer credit or requirement waivers.</p>
+            <p>Anyone who needs a graduation audit or an adviser. Don't use it for double majors, transfer credit or requirement waivers.</p>
           </div>
         </div>
       </div>
@@ -349,20 +355,20 @@ footer p { margin: 0; max-width: 40em; }
           <li>
             <div>
               <h3>You give it your requirements</h3>
-              <p>Upload the faculty's syllabus as a PDF, text file or CSV, or paste the text in. The parser (pdfplumber pulls the text out of PDFs) finds each course and its credits, assessments and prerequisites. Syllabuses are laid out in all sorts of ways, so it handles four: labelled blocks, table rows, course-description pages, and plain lists under headings like "Core courses".</p>
-              <p>Some prerequisites aren't course codes, like "Level 2 in HKDSE Mathematics". The app can't check those, so it shows a warning and doesn't guess.</p>
+              <p>Upload the faculty's syllabus (PDF, text or CSV) or paste the text in. The parser finds each course with its credits, assessments and prerequisites, and uses pdfplumber to read PDFs. Syllabuses look very different from each other, so it handles four layouts: labelled blocks, table rows, course-description pages, and plain lists under headings like "Core courses".</p>
+              <p>Some prerequisites aren't course codes, like "Level 2 in HKDSE Mathematics". The app can't check those, so it shows a warning instead of guessing.</p>
             </div>
           </li>
           <li>
             <div>
               <h3>It looks up reviews in a local file</h3>
-              <p>Reviews come from a CSV that sits next to the app. The app doesn't go online for them and never asks for your RIC or HKU password. Chinese reviews get translated once, with an offline model, when we build the file. The app only reads the finished file, and it shows the original wording next to the English.</p>
+              <p>Reviews come from a CSV next to the app. The app doesn't go online for them and never asks for your RIC or HKU password. Chinese reviews are translated once, with an offline model, when we build the file. The app only reads the finished file and shows the original text next to the English.</p>
             </div>
           </li>
           <li>
             <div>
               <h3>It scores each course out of 10</h3>
-              <p>Credits make up 35% of the score, graded assessments 35% and reviews 30%. The reviews are averaged with a trimmed mean, so one extreme rating can't decide the score, but it isn't thrown away either. If a course has no reviews, the score uses just credits and assessments (rescaled to still run from 1 to 10) and the course is labelled review-free. The calculator below uses the same formula as the app.</p>
+              <p>Credits are 35% of the score, graded assessments 35% and reviews 30%. Reviews are averaged with a trimmed mean, so one extreme rating can't decide the score, but it still counts. A course with no reviews is scored from credits and assessments only (rescaled to still run from 1 to 10) and labelled review-free. The calculator uses the same formula as the app.</p>
               <div class="calc" id="calc">
                 <fieldset>
                   <legend>Try a course</legend>
@@ -385,13 +391,13 @@ footer p { margin: 0; max-width: 40em; }
           <li>
             <div>
               <h3>It builds the plan</h3>
-              <p>First it checks which courses can be scheduled at all. A circular prerequisite, a prerequisite that isn't in the document, or a course too big for one semester gets named in a warning. Then it orders the courses by prerequisites, finds the fewest semesters that fit your limits, and shuffles courses around inside that to even out each semester's total difficulty. Last, it compares the result with taking the courses in document order, which is the comparison at the top of this page.</p>
+              <p>First it checks which courses can be scheduled at all. A circular prerequisite, a prerequisite that isn't in the document, or a course too big for one semester gets a warning. Then it orders the courses by prerequisites, finds the fewest semesters that fit your limits, and shuffles courses inside that to even out each semester's total difficulty. Finally it compares the result with taking courses in document order, like the comparison at the top of this page.</p>
             </div>
           </li>
           <li>
             <div>
               <h3>You change what you don't like</h3>
-              <p>Move a course, add an elective, or type in your own difficulty rating, which replaces the estimate. Every edit re-checks prerequisites and load straight away, and you can download the plan as a CSV.</p>
+              <p>Move a course, add an elective, or type your own difficulty rating, which replaces the estimate. Every edit re-checks prerequisites and load straight away. You can also download the plan as a CSV.</p>
             </div>
           </li>
         </ol>
@@ -401,7 +407,7 @@ footer p { margin: 0; max-width: 40em; }
     <section class="block" id="run" aria-labelledby="h-run">
       <h2 id="h-run">See it run</h2>
       <div class="prose wide">
-        <p>The app comes with a short, made-up Computer Science programme as its sample document. On a first run, press <strong>Build my plan</strong> and you should see:</p>
+        <p>The app comes with a short, made-up Computer Science programme as its sample document. Press <strong>Build my plan</strong> and you should see:</p>
         <ul class="success">
           <li>A note saying it loaded 20 reviews covering all 7 courses.</li>
           <li>A green banner saying every required course is scheduled once, in prerequisite order, within your limits.</li>
@@ -416,7 +422,7 @@ footer p { margin: 0; max-width: 40em; }
             <div class="shot" tabindex="0" role="group" aria-label="Screenshot of the draft plan, scrollable">
               <img src="assets/app-plan.png" width="1050" height="1974" alt="The app's draft plan: a green banner reading OK, then three semester tables listing courses, credits and difficulty scores.">
             </div>
-            <figcaption>The sample run as the app shows it. This programme is tiny, so our plan and document order come out the same (5.58 each). The app says "not more even" and doesn't pretend otherwise.</figcaption>
+            <figcaption>The sample run in the app. The programme is tiny, so our plan and document order come out the same (5.58 each). The app says "not more even" and leaves it at that.</figcaption>
           </figure>
           <figure>
             <div class="shot" tabindex="0" role="group" aria-label="Screenshot of a failure case, scrollable">
@@ -441,7 +447,7 @@ source .venv/bin/activate        # on Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 streamlit run src/course_planner/app.py</pre>
         </div>
-        <p>The app opens in your browser. Leave <strong>Use the sample document</strong> selected and press <strong>Build my plan</strong>. That's the run described above. To try your own programme, choose <strong>Upload a file</strong> and give it the faculty's syllabus PDF. If the PDF lists far more courses than one student takes, the app asks which ones you're planning to take.</p>
+        <p>The app opens in your browser. Leave <strong>Use the sample document</strong> selected and press <strong>Build my plan</strong> to get the run above. To try your own programme, choose <strong>Upload a file</strong> and give it the faculty's syllabus PDF. If the PDF lists far more courses than one student takes, the app asks which ones you plan to take.</p>
         <p>To check the install, run the tests, or see how the parser reads a syllabus without opening the app:</p>
         <div class="codebox">
           <button type="button" data-copy="code-test">Copy</button>
@@ -456,27 +462,27 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
     <section class="block" id="evidence" aria-labelledby="h-evidence">
       <h2 id="h-evidence">Does it work?</h2>
       <div class="prose wide">
-        <p>In the proposal we said what "working" would mean before we started testing. Here's how we did against each bar, including the one we can't fully claim.</p>
+        <p>In the proposal we said what "working" would mean before we started testing. Here's how we did on each point, including the one we can't fully claim.</p>
         <div class="facts">
           <div class="fact">
             <div class="what">Legal plans<small>5 of 5 test documents</small></div>
-            <p>In every plan each required course shows up once, nothing comes before its prerequisite, and no semester goes over the limit. The proposal asked for 4 out of 5.</p>
+            <p>Each required course appears once, nothing comes before its prerequisite and no semester goes over the limit. The proposal asked for 4 of 5.</p>
           </div>
           <div class="fact">
             <div class="what">More even than document order<small>4 of 5 test documents</small></div>
-            <p>This also needed 4 out of 5. The one tie is the smallest document (6 courses), where there isn't much to balance. The chart compares each plan's spread with the baseline's.</p>
+            <p>This also needed 4 of 5. The tie is the smallest document (6 courses), where there isn't much to balance. The chart compares each plan's spread with document order.</p>
           </div>
           <div class="fact">
             <div class="what">A full degree<small>240 credits, 8 semesters</small></div>
-            <p>The computer science route at the top meets every credit requirement in the syllabus: 36 foundation, 54 disciplinary core, 12 capstone, 42 disciplinary electives, 42 free electives and 54 university requirements. It fits into eight semesters with prerequisites respected, and the final year project and digital literacy courses stay where the syllabus puts them. Its spread is <span data-var="plan"></span> against <span data-var="baseline"></span> for document order, which is the mock study plan.</p>
+            <p>The route at the top meets every credit requirement in the syllabus (36 foundation, 54 core, 12 capstone, 42 disciplinary electives, 42 free electives, 54 university requirements) in eight semesters, with prerequisites respected. Its spread is <span data-var="plan"></span> against <span data-var="baseline"></span> for document order, which is the mock study plan.</p>
           </div>
           <div class="fact">
             <div class="what">Parsing accuracy<small>100% on our labelled documents</small></div>
-            <p>We said 95% of courses and prerequisite links had to come out right. We wrote these documents ourselves (some copy the layout of real syllabuses) and labelled the right answers by hand. That shows the layouts work, but it doesn't tell you how the parser does on any one faculty's real file.</p>
+            <p>We said 95% of courses and prerequisite links had to come out right. We wrote these documents ourselves (some copy real syllabus layouts) and labelled the right answers by hand. That shows the layouts work, but it doesn't tell you how the parser does on a given faculty's real file.</p>
           </div>
           <div class="fact">
             <div class="what">Real HKU syllabuses<small>eleven tried, no accuracy figure</small></div>
-            <p>BEcon, BEng (CompSc), BEng (DASE), BEng (CE, EE and ElecE), BA, BJ, BJ (MAI), BSocSc, LLB, BA &amp; LLB and the ENGG regulations. We read the output against the PDFs and fixed what was wrong. We haven't hand-labelled these, so we're not giving a percentage.</p>
+            <p>BEcon, BEng (CompSc), BEng (DASE), BEng (CE, EE and ElecE), BA, BJ, BJ (MAI), BSocSc, LLB, BA &amp; LLB and the ENGG regulations. We read the output against the PDFs and fixed what was wrong. We haven't hand-labelled these, so we don't give a percentage.</p>
           </div>
           <div class="fact">
             <div class="what">Failing safely<small>two cases from the proposal</small></div>
@@ -498,26 +504,27 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
       <h2 id="h-limits">What it can't do yet</h2>
       <div class="prose">
         <ul>
-          <li>The reviews in the repo are demo data we made up. We'd need permission to collect and reuse real RIC reviews and we don't have it yet, so for now the review part of the score runs on invented ratings.</li>
-          <li>The score only uses each review's 1 to 5 rating. It doesn't read the review text, and we haven't tested the translation on real, colloquial Cantonese.</li>
-          <li>Most syllabuses list few prerequisites (BEcon lists none) and the planner doesn't know your year of study. So it can put a final-year course in semester 1, and in the route above it pulls COMP3322, a third-year course, into Year 1. Treat the order as a starting point.</li>
-          <li>A document the size of a faculty catalogue, like the BA, can't be planned until you tell the app which courses you're taking. Some option lists with no clear heading get counted as required.</li>
-          <li>Prerequisite checking covers course codes only. Year standing, department approval and exam grades just get a warning. Summer terms, timetable clashes and which semester a course actually runs in aren't covered at all.</li>
-          <li>We didn't get to a second review source to cross-check RIC, or the small study with 3 to 5 HKU students. Both were stretch goals in the proposal.</li>
+          <li>The reviews in the repo are demo data we made up. We'd need permission to collect and reuse real RIC reviews, and we don't have it yet. Until then the review part of the score runs on invented ratings.</li>
+          <li>The score only uses each review's 1 to 5 rating, not the text. We also haven't tested the translation on real, colloquial Cantonese.</li>
+          <li>Most syllabuses list few prerequisites (BEcon lists none), and the planner doesn't know which year a course belongs to. It can put a final-year course in semester 1, and in the route above it pulls COMP3322, a third-year course, into Year 1. Treat the order as a starting point.</li>
+          <li>A document as big as a faculty catalogue, like the BA, can't be planned until you say which courses you're taking. Option lists with no clear heading can get counted as required.</li>
+          <li>Prerequisite checks only cover course codes. Year standing, department approval and exam grades get a warning and nothing more. Summer terms, timetable clashes and which semester a course actually runs in aren't covered.</li>
+          <li>We didn't get to a second review source to cross-check RIC, or the small study with 3 to 5 HKU students. Both were stretch goals.</li>
         </ul>
-        <p>The score is an estimate from past student reviews and the requirement document. It isn't an official HKU rating, and the plan isn't a graduation audit, so check it against the current programme rules and with an academic adviser.</p>
+        <p>The score is an estimate from past student reviews and the requirement document. It isn't an official HKU rating and the plan isn't a graduation audit. Check it against the current programme rules and with an academic adviser.</p>
         <h3>How we built it</h3>
-        <p>Most of the code was written with Claude Code, an AI coding assistant, and went through pull requests before it was merged. The full AI-use disclosure is in our report. The repo has no passwords, API keys or personal data, and the app keeps uploaded files only on the machine it runs on.</p>
+        <p>Most of the code was written with Claude Code, an AI coding assistant, and went through pull requests before it was merged. Our report has the full AI-use disclosure. The repo has no passwords, API keys or personal data, and the app keeps uploaded files only on the machine it runs on.</p>
       </div>
     </section>
 
     <section class="block" id="learned" aria-labelledby="h-learned">
       <h2 id="h-learned">What we learned</h2>
       <div class="prose">
-        <p>Real syllabuses are messier than anything we'd write ourselves. Our first parsing check found only 88% of prerequisite links, under our own 95% bar. Then real files showed layouts we hadn't thought of: year columns in tables, prerequisites that only appear inside course descriptions, and courses with no credits listed. The parser now handles four layouts instead of one.</p>
-        <p>Testing each piece on its own wasn't enough. Features we'd built in separate pull requests, like CSV export with your own ratings and ratings on electives, broke when we put them together. We only caught that in a review of the whole project.</p>
-        <p>Saying what the app can't check beats guessing. A warning for "Level 2 in HKDSE Mathematics" is more honest than pretending the app understood it.</p>
-        <p>We also changed our mind on RIC. Our first draft used it as a live source, which made reviewers ask about passwords. Switching to a local dataset fixed that, but it means someone has to collect real reviews beforehand, and that part isn't finished.</p>
+        <p>Real syllabuses are messier than the ones we wrote ourselves. Our first parsing check found only 88% of prerequisite links, below our own 95% bar. Real files then showed layouts we hadn't expected: year columns in tables, prerequisites that only appear in course descriptions, and courses with no credits listed. The parser now handles four layouts instead of one.</p>
+        <p>Testing each piece on its own wasn't enough. Features from separate pull requests, like CSV export with your own ratings and ratings on electives, broke when we put them together. We only found that when we reviewed the whole project.</p>
+        <p>Planning a full degree showed gaps our small test documents didn't. The planner had no way to handle a year-long final year project or a course that belongs to one year, so we added both.</p>
+        <p>A warning beats a guess. Showing a warning for "Level 2 in HKDSE Mathematics" is more honest than pretending the app understood it.</p>
+        <p>We also changed our mind about RIC. Our first draft used it as a live source, which made reviewers ask about passwords. A local dataset fixes that, but someone still has to collect real reviews first, and that part isn't done.</p>
       </div>
     </section>
   </main>
@@ -594,6 +601,13 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
             }
           });
         });
+        sem.forEach(function (code) {
+          var w = byCode[code].window;
+          if (w && (i < w[0] || i > w[1])) {
+            bad[code] = true;
+            found.push(code + " belongs in Year " + (Math.floor(w[0] / 2) + 1) + ".");
+          }
+        });
         var credits = sem.reduce(function (t, c) { return t + byCode[c].credits; }, 0);
         if (credits > run.limits.credits) found.push(label(i) + " has " + credits + " credits, and the limit is " + run.limits.credits + ".");
         if (sem.length > run.limits.courses) found.push(label(i) + " has " + sem.length + " courses, and the limit is " + run.limits.courses + ".");
@@ -641,16 +655,16 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
         var c = byCode[code], rgb = shade(c.difficulty);
         var b = document.createElement("button");
         b.type = "button";
-        b.className = "tile " + (luminance(rgb) > 0.32 ? "light" : "dark") + (check.bad[code] ? " bad" : "") + (c.generic ? " generic" : "") + (c.group === "free" ? " hollow" : "") + (c.pinned ? " fixed" : "") + (focus && focus !== c.group ? " dim" : "");
+        b.className = "tile " + (luminance(rgb) > 0.32 ? "light" : "dark") + (check.bad[code] ? " bad" : "") + (c.generic ? " generic" : "") + (c.group === "free" ? " hollow" : "") + (c.pinned ? " pinned" : "") + (focus && focus !== c.group ? " dim" : "");
         b.style.setProperty("--cat", COLORS[c.group]);
         b.style.background = "rgb(" + rgb.join(",") + ")";
         var slots = Math.max(1, c.credits / 6);
         b.style.height = "calc(" + slots + " * var(--slot) + " + (slots - 1) * 4 + "px)";
         b.style.setProperty("--i", next());
-        b.title = c.title + " (" + groupName[c.group] + (c.pinned ? ", fixed" : "") + ")";
+        b.title = c.title + " (" + groupName[c.group] + (c.pinned ? ", stays in Year 4" : "") + ")";
         b.setAttribute("data-code", code);
         b.setAttribute("aria-pressed", selected === code ? "true" : "false");
-        b.setAttribute("aria-label", c.label + (c.generic ? "" : ", " + c.title) + ", " + c.credits + " credits, difficulty " + c.difficulty.toFixed(1) + (check.bad[code] ? ", prerequisite problem" : "") + (c.pinned ? ". Fixed in this semester." : ". Select to move."));
+        b.setAttribute("aria-label", c.label + (c.generic ? "" : ", " + c.title) + ", " + c.credits + " credits, difficulty " + c.difficulty.toFixed(1) + (check.bad[code] ? ", prerequisite problem" : "") + (c.pinned ? ". Year-long course, stays in Year 4." : ". Select to move."));
         b.innerHTML = "<span class='code'>" + c.label + "</span><span class='num'>" + c.difficulty.toFixed(1) + "</span><span class='title'>" + c.title + "</span>";
         if (!c.pinned) b.addEventListener("click", function () { selected = selected === code ? null : code; draw(false); });
         else b.setAttribute("aria-disabled", "true");
