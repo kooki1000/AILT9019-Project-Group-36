@@ -35,14 +35,24 @@ ROUTE = ROOT / "data" / "samples" / "cs_route_8_semesters.txt"
 # literacy courses mean one semester has to be 33 credits and 6 courses, so that is the limit.
 ROUTE_LIMITS = PlanConstraints(max_credits=33, max_courses=6, max_semesters=8)
 
-# Credits each group must reach, from the syllabus.
+# Credits each group must reach, and what counts towards it, from the syllabus.
 CATEGORIES = [
-    ("foundation", "Foundation courses", 36),
-    ("core", "Disciplinary core courses", 54),
-    ("capstone", "Capstone experience", 12),
-    ("elective", "Disciplinary elective courses", 42),
-    ("free", "Elective courses (free electives)", 42),
-    ("uni", "University requirements", 54),
+    ("foundation", "Foundation courses", 36,
+     "Six set courses: computing, programming and mathematics."),
+    ("core", "Disciplinary core courses", 54,
+     "Four introductory and five advanced courses, all compulsory. Algorithm design and the "
+     "database or networks course each have two options."),
+    ("capstone", "Capstone experience", 12,
+     "The year-long final year project, COMP4801. The non-credit COMP3410 internship is also "
+     "required."),
+    ("elective", "Disciplinary elective courses", 42,
+     "Seven computer science courses chosen from the syllabus's own elective list."),
+    ("free", "Free electives", 42,
+     "Seven courses from any department, except Common Core. This is a separate requirement "
+     "from the disciplinary electives."),
+    ("uni", "University requirements", 54,
+     "Technical English (6), Chinese language (6), Common Core (36) and digital literacy (6, "
+     "which is AILT1001 and AILT9019 at 3 credits each)."),
 ]
 # Section headings in the route document.
 HEADINGS = {
@@ -123,7 +133,9 @@ def build(path: Path = ROUTE, constraints: PlanConstraints = ROUTE_LIMITS) -> di
     result = generate_plan(courses, (), difficulty, constraints, pinned=PINNED)
     return {
         "limits": {"credits": constraints.max_credits, "courses": constraints.max_courses},
-        "groups": [{"id": g, "name": n, "needed": need} for g, n, need in CATEGORIES],
+        "groups": [
+            {"id": g, "name": n, "needed": need, "note": note} for g, n, need, note in CATEGORIES
+        ],
         "courses": [
             {
                 "code": c.code,
@@ -134,6 +146,7 @@ def build(path: Path = ROUTE, constraints: PlanConstraints = ROUTE_LIMITS) -> di
                 "difficulty": difficulty[c.code],
                 "group": group,
                 "generic": generic,
+                "pinned": c.code in PINNED,
             }
             for c, group, label, hint, generic in entries
         ],
