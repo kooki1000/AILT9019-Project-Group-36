@@ -242,3 +242,39 @@ def test_baseline_takes_courses_in_document_order():
     courses = [course("A1"), course("A2", "A1"), course("B1"), course("C1")]
     semesters, leftover = baseline_plan(courses, (), LIMITS)
     assert semesters == [["A1", "B1"], ["A2", "C1"]] and leftover == []
+
+
+def _six_credit(code, prerequisites=()):
+    return Course(code, code, 6, tuple(prerequisites), 4)
+
+
+def test_pinned_course_stays_in_its_semester_and_others_work_around_it():
+    courses = [_six_credit(f"TEST{n}001") for n in range(1, 7)]
+    constraints = PlanConstraints(max_credits=12, max_courses=2, max_semesters=4)
+    result = generate_plan(courses, constraints=constraints, pinned={"TEST1001": 2})
+    assert result.ok
+    assert "TEST1001" in result.semesters[2]
+    assert all(len(sem) <= 2 for sem in result.semesters)
+    placed = sorted(code for sem in result.semesters for code in sem)
+    assert placed == sorted(c.code for c in courses)
+
+
+def test_pinned_course_counts_towards_the_semester_limit():
+    courses = [_six_credit(f"TEST{n}001") for n in range(1, 5)]
+    constraints = PlanConstraints(max_credits=12, max_courses=2, max_semesters=3)
+    result = generate_plan(courses, constraints=constraints, pinned={"TEST1001": 0, "TEST2001": 0})
+    assert result.semesters[0] == ["TEST1001", "TEST2001"]
+
+
+def test_pinned_course_leaves_its_dependants_for_later_semesters():
+    courses = [_six_credit("TEST1001"), _six_credit("TEST2001", [("TEST1001",)])]
+    constraints = PlanConstraints(max_credits=12, max_courses=2, max_semesters=4)
+    result = generate_plan(courses, constraints=constraints, pinned={"TEST1001": 1})
+    assert result.ok
+    assert result.semesters == [[], ["TEST1001"], ["TEST2001"]]
+
+
+def test_pinning_outside_the_plan_is_rejected():
+    courses = [_six_credit("TEST1001")]
+    with pytest.raises(ValueError):
+        generate_plan(courses, constraints=PlanConstraints(max_semesters=2), pinned={"TEST1001": 5})
