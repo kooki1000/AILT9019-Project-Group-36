@@ -2,18 +2,25 @@
 
 HKU publishes what each programme requires, but not when to take it or how heavy a
 semester will feel. Students usually work that out from memory, a spreadsheet or a short
-chat with an adviser, and often find out a semester is overloaded after they have enrolled.
+chat with an adviser, and it is easy to find out a semester is overloaded only after
+enrolling. The HKU Rights and Interests Committee (RIC) website has first-hand reviews of
+how hard courses feel, but we couldn't find a tool that connects those reviews to an actual
+plan.
 
-This tool reads a programme's requirement document (the faculty's syllabus PDF, pasted
+This app reads a programme's requirement document (the faculty's syllabus PDF, pasted
 text or a CSV), works out which courses are still needed and in what order they can be
-taken, estimates how hard each course is, and spreads them over semesters so no semester
+taken, scores how hard each course is, and spreads them over semesters so no semester
 carries far more than the others. You can then move courses around, add electives and rate
 courses yourself, and every change is checked straight away.
 
 It is a draft-plan helper for students who already know their programme. It is not a
-graduation audit, it does not replace an academic adviser, and it is not meant for double
-majors, transfer credit or requirement waivers. Everything runs on your own computer, and
-nothing you upload is sent anywhere.
+graduation audit, it does not replace an academic adviser, and it leaves out double majors,
+transfer credit and requirement waivers. Everything runs on your own computer. Nothing you
+upload is sent anywhere unless you turn on the optional AI-assisted parsing (see below).
+
+This repository is Group 36's project for AILT9019 AI Literacy II. A short project page,
+with an interactive 8-semester plan, lives in [`docs/`](docs/README.md) and is published at
+<https://kooki1000.github.io/AILT9019-Project-Group-36/>.
 
 ## Contents
 
@@ -21,11 +28,13 @@ nothing you upload is sent anywhere.
 - [Using the app](#using-the-app)
 - [How the plan and the difficulty score work](#how-the-plan-and-the-difficulty-score-work)
 - [Reading faculty syllabuses](#reading-faculty-syllabuses)
+- [AI-assisted parsing](#ai-assisted-parsing-optional)
 - [Review data](#review-data)
 - [Where your data goes](#where-your-data-goes)
 - [Development and testing](#development-and-testing)
 - [Parser as an agent skill](#parser-as-an-agent-skill-claude-and-chatgpt)
 - [Status and known limitations](#status-and-known-limitations)
+- [Team and AI use](#team-and-ai-use)
 
 ## Quick start
 
@@ -49,14 +58,24 @@ draft plan without uploading anything:
 | 3 | COMP3230, COMP3314, STAT2601 |
 
 That run reads 7 courses with no warnings, uses 48 student reviews that cover all 7,
-and finds nothing unscheduled and no plan problems. Changing the completed courses, the
-semester limits or the review file can change the result.
+and finds nothing unscheduled and no plan problems. The difficulty spread (the variance of
+the semester totals) is 7.26 for this plan against 13.48 for taking the courses in document
+order. Reviews visibly move scores: STAT2601 goes from 5.50 (document only) to 6.17, and
+COMP3314 drops to 4.66. Changing the completed courses, the semester limits or the review
+file can change the result.
+
+For something closer to a real degree, `data/samples/cs_route_8_semesters.txt` is a route
+built from the HKU 2025-26 BEng (Computer Science) syllabus and its mock study plan. The
+app reads its 26 courses that have a course code. The interactive board on the project page
+goes further: `docs/build_plan_data.py` adds the Common Core, Chinese language and free
+elective slots (which have no code), splits the year-long final year project across Year 4,
+and plans all 240 credits over 8 semesters.
 
 ## Using the app
 
 ### 1. Give it your requirement document
 
- Upload a PDF, plain text or CSV file, or paste
+Upload a PDF, plain text or CSV file, or paste
 the text. Anything else is refused with a message saying so. Two optional boxes help when
 the document is not a simple list:
 
@@ -172,7 +191,8 @@ mixed in one file:
 We tried it on eleven real 2025-26 and 2026-27 documents: BEcon, BEng (CompSc), BEng (DASE),
 BEng (CE, EE and ElecE), BA, BJ, BJ (MAI), BSocSc, LLB, BA & LLB, and the ENGG regulations.
 That last file is rules with no course list; the app recognises it and asks for the syllabus
-instead.
+instead. None of these has hand-made labels, so we give no accuracy figure for them. We read
+the `syllabus_report` output against the PDF text and fixed what was wrong.
 
 ### Trying another syllabus
 
@@ -195,8 +215,9 @@ yourself, then upload the same file in the app.
 The built-in parser is deterministic and offline. For documents it struggles
 with, turn on **Ask an AI to help read messy documents** in the sidebar. The
 document text is then sent to Alibaba Cloud (Bailian) once per build, and the
-app adds any courses the AI finds that the built-in parser missed. Everything
-else still works without it.
+app adds any courses the AI finds that the built-in parser missed. At most 100,000
+characters are read. Everything else still works without it. We have not looked into
+Alibaba Cloud's retention terms, so don't send a confidential document without permission.
 
 ```bash
 export COURSE_PLANNER_API_KEY=...    # required (DASHSCOPE_API_KEY also works)
@@ -212,6 +233,10 @@ The answer is treated as a suggestion, not as truth:
 - everything the AI adds, ignores or fails at is reported in words, and the
   app runs exactly as usual with the toggle off or without a key.
 
+A real course code can still come back with the wrong credits or prerequisites, so check
+anything the AI added against your document. The tests use a mocked AI; no live Bailian
+request has been part of our checks.
+
 Successful AI answers are cached locally, keyed by the document's bytes, so
 the feature keeps working for a document even after the key expires or the
 network is gone: the app replays the saved answer and says plainly that it is
@@ -223,8 +248,10 @@ is wiped by the same delete button.
 ### File format
 
 The app reads reviews from one local CSV, `data/reviews/sample_reviews.csv` by default. That
-file holds real RIC course reviews collected for this project, with no usernames or account
-details. The 1-5 ratings were assigned during dataset preparation (1 = hardest, 5 = easiest).
+file holds 48 real reviews of seven courses (COMP1117, COMP2113, COMP2119, MATH1013,
+STAT2601, COMP3230 and COMP3314) taken from RIC (<https://richku.com/courses>), with no
+usernames, account details or teacher names. The 1-5 ratings are ours, assigned during
+dataset preparation (1 = hardest, 5 = easiest), not RIC's.
 Set `COURSE_PLANNER_REVIEWS` to use a different file. Without any file, scores come from the
 document alone.
 
@@ -243,8 +270,11 @@ course_code,text,rating,translation
 ### Adding more reviews
 
 The bundled reviews were collected from RIC for this project, with no usernames, account
-details or other private information, and teacher names removed. If you add more reviews,
-keep the same rules, and have a teammate spot-check the ratings and translations.
+details or other private information, and teacher names removed. Someone could still search
+RIC for a quoted sentence. RIC's published rules (<https://richku.com/logs>) say how students
+earn access to its course planner, but not whether review text may be copied or
+redistributed, and we have no written permission. That is an open gap. If you add more
+reviews, keep the same rules, and have a teammate spot-check the ratings and translations.
 
 ### Preparing a translated dataset (team only)
 
@@ -274,7 +304,7 @@ Nothing is sent to a remote service unless you turn on AI-assisted parsing
 (see above), and then only the document text goes to Alibaba Cloud (Bailian),
 once per build. Documents you upload, what the parser read from them and any
 cached AI answers are saved in a local SQLite file,
-are saved in a local SQLite file, `.course_planner/app.sqlite3` (change it with
+`.course_planner/app.sqlite3` (change it with
 `COURSE_PLANNER_DB`). The sidebar button deletes everything in it. If reading a file fails,
 for example in a live demo, the saved result for the same file is shown instead, and the app
 says so. The review CSV is a plain file next to the app, is never copied into the database,
@@ -284,6 +314,11 @@ model download use the internet.
 ## Development and testing
 
 ### Running the tests
+
+On 18 November we ran everything below from the project archive in a fresh Linux
+environment (Python 3.12.14): 392 tests passed and 1 was skipped (the real-syllabus test,
+which needs a folder of PDFs). Ruff passed, the app started, and both parsing evaluations
+and the planning evaluation passed. That was not a fresh clone from GitHub.
 
 ```bash
 python -m pytest -q                              # everything, including the Streamlit tests
@@ -302,7 +337,9 @@ python -m course_planner.evaluation tests/fixtures/requirements
 ```
 
 On the five constructed fixtures it gives 5 of 5 legal plans and 4 of 5 more even than the
-baseline, so it passes. It uses document-only scores and says nothing about the reviews.
+baseline, so it passes, but only just: the 6-course minor comes out no more even than
+document order (0.07 against 0.07), because there is almost nothing to balance. It uses
+document-only scores and says nothing about the reviews.
 
 ### Parsing check
 
@@ -362,21 +399,26 @@ The zip carries its own copy of the parser modules, so nothing needs installing.
 
 ### Proposal items
 
-Must-have items from the proposal:
+Must-have items from the proposal. All seven are built, with one change: Chinese reviews are
+translated once while the review file is prepared, and the app reads only the stored English
+text.
 
 | Item | Status |
 | ---- | ------ |
-| 1. Parse a requirement document | Built. 100% on our labelled documents. Tried on eleven real syllabuses and checked against their text, but with no labelled accuracy figure for real files. |
-| 2. Load a local review CSV | Built, with real RIC reviews collected for this project (ratings assigned during preparation). |
+| 1. Parse a requirement document | Built. 100% recall and precision on our labelled documents. Tried on eleven real syllabuses and checked against their text, but with no labelled accuracy figure for real files. |
+| 2. Load a local review CSV | Built, with 48 real RIC reviews of seven courses (ratings assigned by us during preparation). |
 | 3. Detect and translate Chinese reviews | The translation helper is built. The app reads only translations prepared beforehand. |
 | 4. 1 to 10 score with a fallback rule | Built. Review input is the 1 to 5 rating. |
 | 5. Multi-semester plan | Built |
 | 6. Review and adjust the plan | Built |
 | 7. Flag prerequisite conflicts | Built for course-code prerequisites. Other conditions are reported, not enforced. |
 
-Should-have items: CSV export, self-reported difficulty ratings, the skill
-file and an optional AI-assisted parse are built. A second review source and
-the study with HKU students are not.
+Should-have items: CSV export, self-reported difficulty ratings and the skill file are
+built (we had cut the skill file at the mid-term and added it back later). The optional
+AI-assisted parse was not in the proposal and was added afterwards. A second review source
+and the study with 3 to 5 HKU students were not done, and neither was the labelled test on
+two real anonymised documents the proposal planned. We ran the parser on eleven real
+syllabuses without labels instead.
 
 ### Known limitations
 
@@ -391,11 +433,19 @@ What to keep in mind when reading a plan:
   can't schedule.
 - Several faculties leave credits out of whole lists. The app warns and leaves the credits
   empty. Stacked "A or B" table cells that PDF extraction scrambles can do the same.
-- The score comes from a 1 to 5 rating, not from reading review text. The ratings were
-  assigned during dataset preparation, and the Chinese translations have not all been
-  spot-checked by a second reader.
+- The score comes from a 1 to 5 rating, not from reading review text. The ratings are ours,
+  from 48 reviews of seven courses. Not every Chinese translation has been read by a second
+  person, and machine translation is weaker on colloquial Cantonese. A small set of reviews
+  with ratings we assigned ourselves can bias the score. Showing the text next to each number
+  lets you see the basis, but it doesn't remove the bias.
+- Passing tests on documents we wrote says little about unseen faculty PDFs, and we haven't
+  shown that the score really measures difficulty.
 - AI-assisted parsing (optional, off by default) sends the document text to Alibaba Cloud.
   Its suggestions are checked against the document text, but check any added course yourself.
+  This breaks the proposal's promise that nothing leaves your machine, which now holds only
+  by default.
+- Dependency versions are not pinned, and we did not record the exact versions of the
+  development models or the revision of the translation model.
 - Prerequisite checks cover course codes. Year standing, department approval and exam
   grades are not enforced.
 - Semester availability, timetable clashes, double majors, transfer credit and requirement
@@ -403,3 +453,23 @@ What to keep in mind when reading a plan:
 
 This is a planning aid. It is not an official HKU graduation audit or difficulty rating, so
 check the result against the current programme rules and with an academic adviser.
+
+Next, we would build an independently labelled set of real syllabuses, get a second reader on
+the ratings and translations, add more option-layout fixtures and parse choice groups
+explicitly, and pin dependency versions.
+
+## Team and AI use
+
+- **Ukai Koki:** parser, difficulty score, planner, Streamlit app, evaluation checks, tests
+  and the public webpage.
+- **Jiang Hongyi:** collected the RIC reviews and prepared the translations and ratings with
+  Zhang Shui, and packaged the parser as a skill file.
+- **Chen Muk Sing:** tested the interface, wrote the CSV cleaning scripts and filmed the demo
+  video.
+- **Zhang Shui:** collected and translated the reviews with Hongyi, built CSV export and the
+  self-reported ratings, and edited the presentation video.
+
+Tools used: Claude Code (Anthropic) wrote most of the code through pull requests. OpenAI
+Codex drafted the README and ran the 18 November check. Alibaba Cloud Bailian
+`qwen-plus` does the optional parsing, and Helsinki-NLP `opus-mt-zh-en` translated the Chinese
+reviews once while the dataset was built. The full disclosure is in the group's final report.

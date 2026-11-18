@@ -289,7 +289,7 @@ footer p { margin: 0; max-width: 40em; }
   <main id="main">
     <div class="hero" id="top">
       <h1><span>HKU tells you what to take.</span> <span>It doesn't tell you when.</span></h1>
-      <p class="lede">We made an app that reads your programme's requirements and spreads your courses over the semesters, so no semester is much heavier than the others. It runs on your own laptop and nothing you upload leaves it.</p>
+      <p class="lede">We built an app that reads your programme's requirements and spreads your courses over the semesters, so no semester ends up much heavier than the others. It runs on your own laptop, and nothing you upload leaves it unless you switch on the optional AI parsing.</p>
       <div class="actions">
         <a class="btn solid" href="#local">Run it yourself</a>
         <a class="btn line" href="https://github.com/kooki1000/AILT9019-Project-Group-36">Source code on GitHub</a>
@@ -297,7 +297,7 @@ footer p { margin: 0; max-width: 40em; }
 
       <div class="board-wrap" id="board-wrap">
         <div class="board-intro">
-          <p>This is the app's real output for the HKU 2025-26 BEng (Computer Science) syllabus: 240 credits over four years. Try it yourself. Switch to document order, click a course and move it to another semester to see what breaks.</p>
+          <p>This is real output from the app for the HKU 2025-26 BEng (Computer Science) syllabus: 240 credits over four years. Switch to document order, or click a course and move it to another semester, and watch what breaks.</p>
         </div>
         <noscript><p>The interactive plan needs JavaScript. The screenshots further down show the app itself.</p></noscript>
         <div class="controls">
@@ -318,9 +318,9 @@ footer p { margin: 0; max-width: 40em; }
           <span>Shade shows the 1 to 10 difficulty score:</span>
           <span>lighter</span><span class="ramp" aria-hidden="true"></span><span>darker</span>
           <ul>
-            <li>The score comes from the syllabus alone, with no reviews.</li>
+            <li>These scores come from the syllabus alone. Our review file only covers the seven courses in the small sample document, so none of them apply here.</li>
             <li>Spread is how uneven the semesters are (the variance of each semester's total difficulty). Lower is better.</li>
-            <li>Dashed tiles are slots with no course code, like Common Core. The app knows nothing about them, so it gives them a mid-range score.</li>
+            <li>Dashed tiles are slots with no course code, like Common Core. The app knows nothing about them, so each gets a mid-range score.</li>
             <li>COMP4801 is a year-long course, so it is two 6-credit halves that stay in Year 4.</li>
             <li>AILT1001 belongs in Year 1 and AILT9019 in Year 2. They are 3 credits each, so a semester can hold up to 33 credits and 6 courses.</li>
           </ul>
@@ -333,8 +333,8 @@ footer p { margin: 0; max-width: 40em; }
     <section class="block" id="problem" aria-labelledby="h-problem">
       <h2 id="h-problem">The problem</h2>
       <div class="prose">
-        <p>HKU publishes what every programme requires. It doesn't say when to take each course, or how heavy a semester gets once you stack them up. Most of us work it out from memory, a spreadsheet or a quick chat with an adviser, and sometimes you only find out a semester is overloaded after you've enrolled.</p>
-        <p>Programme pages tell you what to take. RIC tells you how hard a course feels. Nothing combines the two into a plan, and we couldn't find a tool that reads the requirements, uses course reviews and spreads courses by workload. The idea is ours, not from the course topic list. It comes from planning problems we and our friends ran into.</p>
+        <p>HKU publishes what every programme requires. It doesn't say when to take each course, or how heavy a semester gets once you stack them up. Most of us work it out from memory, a spreadsheet or a quick chat with an adviser, and it's easy to find out a semester is overloaded only after you've enrolled.</p>
+        <p>The programme pages tell you what to take. The HKU Rights and Interests Committee (RIC) website has first-hand reviews of how hard courses feel. We couldn't find anything that connects the two into an actual plan. The idea came from planning problems we and our friends ran into ourselves.</p>
         <div class="split">
           <div>
             <h3>Who it's for</h3>
@@ -355,20 +355,21 @@ footer p { margin: 0; max-width: 40em; }
           <li>
             <div>
               <h3>You give it your requirements</h3>
-              <p>Upload the faculty's syllabus (PDF, text or CSV) or paste the text in. The parser finds each course with its credits, assessments and prerequisites, and uses pdfplumber to read PDFs. Syllabuses look very different from each other, so it handles four layouts: labelled blocks, table rows, course-description pages, and plain lists under headings like "Core courses".</p>
-              <p>Some prerequisites aren't course codes, like "Level 2 in HKDSE Mathematics". The app can't check those, so it shows a warning instead of guessing.</p>
+              <p>Upload the faculty's syllabus (PDF, text or CSV) or paste the text in. The parser finds each course with its credits, assessments and prerequisites, and uses pdfplumber to read PDFs. HKU syllabuses don't share a format, so the parser copes with labelled blocks, table rows with or without a year column, course-description pages, and plain lists under headings like "Core courses". It also keeps several degrees in one file apart and tags "choose one of" groups as electives.</p>
+              <p>Some prerequisites aren't course codes, like "Level 2 in HKDSE Mathematics". The app can't check those, so it shows a warning instead of guessing. We held to one rule: a course is never dropped quietly, because a missing course gives a plan that looks fine and isn't.</p>
+              <p>For documents the parser struggles with, there's an optional AI-assisted mode, off by default. It sends the document text to Alibaba Cloud (Bailian, qwen-plus) and keeps a suggested course only if its code appears in the document itself. Anything it adds, ignores or fails at is reported in words.</p>
             </div>
           </li>
           <li>
             <div>
               <h3>It looks up reviews in a local file</h3>
-              <p>Reviews come from a CSV next to the app. The app doesn't go online for them and never asks for your RIC or HKU password. Chinese reviews are translated once, with an offline model, when we build the file. The app only reads the finished file and shows the original text next to the English.</p>
+              <p>Reviews come from a CSV next to the app: 48 reviews of seven courses, collected from RIC with usernames, account details and teacher names removed. The app doesn't go online for them and never asks for your RIC or HKU password. Chinese reviews were translated once, with the Helsinki-NLP opus-mt-zh-en model, while we built the file. The app only reads the finished file and shows the original text next to the English.</p>
             </div>
           </li>
           <li>
             <div>
               <h3>It scores each course out of 10</h3>
-              <p>Credits are 35% of the score, graded assessments 35% and reviews 30%. Reviews are averaged with a trimmed mean, so one extreme rating can't decide the score, but it still counts. A course with no reviews is scored from credits and assessments only (rescaled to still run from 1 to 10) and labelled review-free. The calculator uses the same formula as the app.</p>
+              <p>Credits are 35% of the score, graded assessments 35% and reviews 30%. Each review counts through its 1 to 5 rating (the app doesn't read the review text), and ratings are averaged with a trimmed mean once a course has five or more, so one extreme rating can't decide the score but still counts. A course with no reviews is scored from credits and assessments only, rescaled to still run from 1 to 10, and labelled review-free. If the document gives no credits or assessment count, the app assumes 6 credits and 4 assessments and says so. The calculator uses the same formula as the app.</p>
               <div class="calc" id="calc">
                 <fieldset>
                   <legend>Try a course</legend>
@@ -391,7 +392,7 @@ footer p { margin: 0; max-width: 40em; }
           <li>
             <div>
               <h3>It builds the plan</h3>
-              <p>First it checks which courses can be scheduled at all. A circular prerequisite, a prerequisite that isn't in the document, or a course too big for one semester gets a warning. Then it orders the courses by prerequisites, finds the fewest semesters that fit your limits, and shuffles courses inside that to even out each semester's total difficulty. Finally it compares the result with taking courses in document order, like the comparison at the top of this page.</p>
+              <p>First it checks which courses can be scheduled at all. A circular prerequisite, a prerequisite that isn't in the document, or a course too big for one semester gets a warning. Then it orders the courses by prerequisites, finds the fewest semesters that fit your limits (24 credits and 5 courses a semester by default, up to 8 semesters), and shuffles courses inside that to even out each semester's total difficulty. Finally it compares the result with taking courses in document order, like the comparison at the top of this page.</p>
             </div>
           </li>
           <li>
@@ -409,9 +410,10 @@ footer p { margin: 0; max-width: 40em; }
       <div class="prose wide">
         <p>The app comes with a short, made-up Computer Science programme as its sample document. Press <strong>Build my plan</strong> and you should see:</p>
         <ul class="success">
-          <li>A note saying it loaded 20 reviews covering all 7 courses.</li>
+          <li>A note saying it loaded 48 reviews covering all 7 courses.</li>
           <li>A green banner saying every required course is scheduled once, in prerequisite order, within your limits.</li>
-          <li>Three semesters: COMP1117 and MATH1013, then COMP2113, COMP2119 and STAT2601, then COMP3230 and COMP3314.</li>
+          <li>Three semesters: COMP1117 and MATH1013, then COMP2113 and COMP2119, then COMP3230, COMP3314 and STAT2601.</li>
+          <li>A spread of 7.26 for our plan against 13.48 for document order, so the plan is the more even one.</li>
         </ul>
         <div class="vidslot" id="vidslot" hidden>
           <h3>Recorded walkthrough</h3>
@@ -420,9 +422,9 @@ footer p { margin: 0; max-width: 40em; }
         <div class="figs">
           <figure>
             <div class="shot" tabindex="0" role="group" aria-label="Screenshot of the draft plan, scrollable">
-              <img src="assets/app-plan.png" width="1050" height="1974" alt="The app's draft plan: a green banner reading OK, then three semester tables listing courses, credits and difficulty scores.">
+              <img src="assets/app-plan.png" width="1300" height="2756" alt="The app's draft plan: a green banner reading OK, then three semester tables listing courses, credits and difficulty scores.">
             </div>
-            <figcaption>The sample run in the app. The programme is tiny, so our plan and document order come out the same (5.58 each). The app says "not more even" and leaves it at that.</figcaption>
+            <figcaption>The sample run in the app. Reviews move some scores: STAT2601 goes from 5.50 (document only) to 6.17, and COMP3314 drops to 4.66.</figcaption>
           </figure>
           <figure>
             <div class="shot" tabindex="0" role="group" aria-label="Screenshot of a failure case, scrollable">
@@ -437,7 +439,7 @@ footer p { margin: 0; max-width: 40em; }
     <section class="block" id="local" aria-labelledby="h-local">
       <h2 id="h-local">Run it yourself</h2>
       <div class="prose wide">
-        <p>You need Python 3.10 or newer. There's no account, API key or database to set up.</p>
+        <p>You need Python 3.10 or newer. There's no account, API key or database to set up. The optional AI parsing is the only thing that needs a key.</p>
         <div class="codebox">
           <button type="button" data-copy="code-install">Copy</button>
 <pre id="code-install">git clone https://github.com/kooki1000/AILT9019-Project-Group-36.git
@@ -462,7 +464,7 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
     <section class="block" id="evidence" aria-labelledby="h-evidence">
       <h2 id="h-evidence">Does it work?</h2>
       <div class="prose wide">
-        <p>In the proposal we said what "working" would mean before we started testing. Here's how we did on each point, including the one we can't fully claim.</p>
+        <p>In the proposal we said what "working" would mean before we started testing. Here's how we did on each point, including the ones we can't fully claim.</p>
         <div class="facts">
           <div class="fact">
             <div class="what">Legal plans<small>5 of 5 test documents</small></div>
@@ -470,7 +472,7 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
           </div>
           <div class="fact">
             <div class="what">More even than document order<small>4 of 5 test documents</small></div>
-            <p>This also needed 4 of 5. The tie is the smallest document (6 courses), where there isn't much to balance. The chart compares each plan's spread with document order.</p>
+            <p>This also needed 4 of 5, so we only just cleared it. The tie is the smallest document (6 courses), where there's almost nothing to balance. The chart compares each plan's spread with document order.</p>
           </div>
           <div class="fact">
             <div class="what">A full degree<small>240 credits, 8 semesters</small></div>
@@ -478,19 +480,19 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
           </div>
           <div class="fact">
             <div class="what">Parsing accuracy<small>100% on our labelled documents</small></div>
-            <p>We said 95% of courses and prerequisite links had to come out right. We wrote these documents ourselves (some copy real syllabus layouts) and labelled the right answers by hand. That shows the layouts work, but it doesn't tell you how the parser does on a given faculty's real file.</p>
+            <p>We said 95% of courses and prerequisite links had to come out right, for recall and for precision. We wrote these documents ourselves (some copy real syllabus layouts) and labelled the right answers by hand. That shows the layouts work, but it doesn't tell you how the parser does on a given faculty's real file.</p>
           </div>
           <div class="fact">
             <div class="what">Real HKU syllabuses<small>eleven tried, no accuracy figure</small></div>
-            <p>BEcon, BEng (CompSc), BEng (DASE), BEng (CE, EE and ElecE), BA, BJ, BJ (MAI), BSocSc, LLB, BA &amp; LLB and the ENGG regulations. We read the output against the PDFs and fixed what was wrong. We haven't hand-labelled these, so we don't give a percentage.</p>
+            <p>BEcon, BEng (CompSc), BEng (DASE), BEng (CE, EE and ElecE), BA, BJ, BJ (MAI), BSocSc, LLB, BA &amp; LLB and the ENGG regulations. The ENGG regulations have no course list, so the app says so and asks for the syllabus. We read the output of the other ten against the PDFs and fixed what was wrong. We never labelled these by hand, so we don't give a percentage.</p>
           </div>
           <div class="fact">
-            <div class="what">Failing safely<small>two cases from the proposal</small></div>
-            <p>Circular prerequisites and courses that can never fit are reported in plain words (see the screenshot above). A course with no reviews gets a score from the document alone and is marked review-free.</p>
+            <div class="what">Failing safely<small>circular prerequisites and made-up courses</small></div>
+            <p>Circular prerequisites and courses that can never fit are reported in plain words (see the screenshot above). In a test with a mocked AI answer, a course whose code wasn't in the document was ignored with a warning. A course with no reviews gets a score from the document alone and is marked review-free.</p>
           </div>
           <div class="fact">
-            <div class="what">Automated tests<small>over 350, all passing</small></div>
-            <p>They cover the parser, prerequisites, scoring, the planner, CSV export and the Streamlit interface.</p>
+            <div class="what">Automated tests<small>392 passing, 1 skipped</small></div>
+            <p>They cover the parser, prerequisites, scoring, the planner, CSV export, the AI parsing (with mocks) and the Streamlit interface. The skipped one needs a folder of real PDFs. On 18 November we ran them, the lint check and all three evaluations in a fresh Linux environment on Python 3.12, from the project archive rather than a clean clone.</p>
           </div>
         </div>
         <div class="chart" role="img" aria-label="Spread of semester difficulty for our plan and for document order, on five test documents. Our plan is lower on four.">
@@ -504,27 +506,29 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
       <h2 id="h-limits">What it can't do yet</h2>
       <div class="prose">
         <ul>
-          <li>The bundled reviews are real RIC course reviews collected for this project, with no usernames and no teacher names. Their 1 to 5 ratings were assigned during dataset preparation, and the translations haven't all been spot-checked by a second reader yet.</li>
-          <li>The score only uses each review's 1 to 5 rating, not the text. The Chinese-to-English translations of the reviews still need a spot-check by a second reader.</li>
+          <li>The score rests on 48 reviews of seven courses, and the 1 to 5 ratings are ones we assigned ourselves, not RIC's. The app only uses the rating, not the review text. Not every Chinese translation has been read by a second person, and machine translation is weaker on colloquial Cantonese.</li>
+          <li>The reviews come from RIC with usernames, account details and teacher names removed, but someone could still search RIC for a quoted sentence. RIC's published rules don't say whether review text can be copied or redistributed, and we have no written permission. That gap is still open.</li>
           <li>Most syllabuses list few prerequisites (BEcon lists none), and the planner doesn't know which year a course belongs to. It can put a final-year course in semester 1, and in the route above it pulls COMP3322, a third-year course, into Year 1. Treat the order as a starting point.</li>
-          <li>A document as big as a faculty catalogue, like the BA, can't be planned until you say which courses you're taking. Option lists with no clear heading can get counted as required.</li>
+          <li>A document as big as a faculty catalogue, like the BA, can't be planned until you say which courses you're taking. In BA &amp; LLB, an options group has no heading the parser reads as "choose from", so those courses count as required. The app lists the ones it can't schedule.</li>
           <li>Prerequisite checks only cover course codes. Year standing, department approval and exam grades get a warning and nothing more. Summer terms, timetable clashes and which semester a course actually runs in aren't covered.</li>
-          <li>We didn't get to a second review source to cross-check RIC, or the small study with 3 to 5 HKU students. Both were stretch goals.</li>
+          <li>Optional AI parsing sends the document text to Alibaba Cloud, and we haven't looked into their retention terms, so don't send a confidential document without permission. It rejects invented course codes, but a real code can still come back with the wrong credits or prerequisites.</li>
+          <li>Passing our own tests says little about unseen faculty PDFs, and we haven't shown that the score measures difficulty well. We also skipped the second review source and the small study with 3 to 5 HKU students. Both were stretch goals.</li>
         </ul>
         <p>The score is an estimate from past student reviews and the requirement document. It isn't an official HKU rating and the plan isn't a graduation audit. Check it against the current programme rules and with an academic adviser.</p>
         <h3>How we built it</h3>
-        <p>Most of the code was written with Claude Code, an AI coding assistant, and went through pull requests before it was merged. Our report has the full AI-use disclosure. The repo has no passwords, API keys or personal data, and the app keeps uploaded files only on the machine it runs on.</p>
+        <p>Most of the code was written with Claude Code (Anthropic) and went through pull requests before it was merged. OpenAI Codex drafted the README and ran the 18 November install check. Two other models do runtime or data work: opus-mt-zh-en translated the Chinese reviews once, and qwen-plus handles the optional AI parsing. Our report has the full AI-use disclosure. The repo has no passwords or API keys, and the app keeps uploaded files only on the machine it runs on.</p>
       </div>
     </section>
 
     <section class="block" id="learned" aria-labelledby="h-learned">
       <h2 id="h-learned">What we learned</h2>
       <div class="prose">
-        <p>Real syllabuses are messier than the ones we wrote ourselves. Our first parsing check found only 88% of prerequisite links, below our own 95% bar. Real files then showed layouts we hadn't expected: year columns in tables, prerequisites that only appear in course descriptions, and courses with no credits listed. The parser now handles four layouts instead of one.</p>
+        <p>Real syllabuses are messier than the ones we wrote ourselves. Our first parsing check found only 88% of prerequisite links, below our own 95% bar. Real files then showed layouts we hadn't expected: year columns in tables, prerequisites that only appear in course descriptions, and courses with no credits listed. The parser now handles several layouts instead of one.</p>
         <p>Testing each piece on its own wasn't enough. Features from separate pull requests, like CSV export with your own ratings and ratings on electives, broke when we put them together. We only found that when we reviewed the whole project.</p>
         <p>Planning a full degree showed gaps our small test documents didn't. The planner had no way to handle a year-long final year project or a course that belongs to one year, so we added both.</p>
         <p>A warning beats a guess. Showing a warning for "Level 2 in HKDSE Mathematics" is more honest than pretending the app understood it.</p>
-        <p>We also changed our mind about RIC. Our first draft used it as a live source, which made reviewers ask about passwords. A local dataset fixes that, but someone still has to collect real reviews first, and that part isn't done.</p>
+        <p>We also changed our mind about RIC. Our first draft used it as a live source, which made reviewers ask about passwords. A local dataset fixes that, and we have now collected 48 real reviews for it. The harder part is that a small set of reviews with ratings we gave ourselves can bias the score. Showing the review text beside each number lets you see where it came from, but it doesn't remove the bias.</p>
+        <p>One promise didn't survive. The proposal said nothing you upload leaves your machine. The optional AI parsing breaks that when it's on, so we now say the promise only holds by default.</p>
       </div>
     </section>
   </main>
