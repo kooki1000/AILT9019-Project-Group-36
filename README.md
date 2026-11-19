@@ -15,6 +15,11 @@ graduation audit, it does not replace an academic adviser, and it is not meant f
 majors, transfer credit or requirement waivers. Everything runs on your own computer, and
 nothing you upload is sent anywhere.
 
+## Demo and presentation
+
+- Demo video: https://youtu.be/zb94ASuKkm8
+- Presentation video: https://youtu.be/-xuMJ-DEYiY
+
 ## Contents
 
 - [Quick start](#quick-start)
