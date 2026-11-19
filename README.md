@@ -22,6 +22,11 @@ This repository is Group 36's project for AILT9019 AI Literacy II. A short proje
 with an interactive 8-semester plan, lives in [`docs/`](docs/README.md) and is published at
 <https://kooki1000.github.io/AILT9019-Project-Group-36/>.
 
+## Demo and presentation
+
+- Demo video: https://youtu.be/zb94ASuKkm8
+- Presentation video: https://youtu.be/-xuMJ-DEYiY
+
 ## Contents
 
 - [Quick start](#quick-start)

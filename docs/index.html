@@ -418,6 +418,7 @@ footer p { margin: 0; max-width: 40em; }
         <div class="vidslot" id="vidslot" hidden>
           <h3>Recorded walkthrough</h3>
           <div id="vidframe"></div>
+          <p><a href="https://youtu.be/zb94ASuKkm8">Watch the demo on YouTube</a> or <a href="https://youtu.be/-xuMJ-DEYiY">watch the project presentation</a>.</p>
         </div>
         <div class="figs">
           <figure>
@@ -536,6 +537,7 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
   <footer>
     <p>AILT9019 AI Literacy for Computing and Data Science, Group 36.</p>
     <p><a href="https://github.com/kooki1000/AILT9019-Project-Group-36">Source code and README on GitHub</a></p>
+    <p><a href="https://youtu.be/zb94ASuKkm8">Demo video</a> &middot; <a href="https://youtu.be/-xuMJ-DEYiY">Presentation video</a></p>
   </footer>
 </div>
 
@@ -795,7 +797,7 @@ python -m course_planner.syllabus_report path/to/syllabus.pdf</pre>
   });
 
   /* ---------- optional demo video: set VIDEO_ID to an unlisted YouTube video id ---------- */
-  var VIDEO_ID = "";
+  var VIDEO_ID = "zb94ASuKkm8";
   if (VIDEO_ID) {
     document.getElementById("vidframe").innerHTML = "<iframe src='https://www.youtube-nocookie.com/embed/" + VIDEO_ID + "' title='Demo walkthrough' allowfullscreen loading='lazy'></iframe>";
     document.getElementById("vidslot").hidden = false;
